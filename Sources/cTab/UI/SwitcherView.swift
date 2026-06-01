@@ -91,10 +91,16 @@ struct WindowCell: View {
         max(height - SwitcherLayout.labelHeight, 1)
     }
 
+    /// ウィンドウ名をアプリ名の横に表示するか（空、またはアプリ名と同一なら出さない）。
+    private var showsWindowTitle: Bool {
+        let trimmed = window.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty && trimmed != window.appName
+    }
+
     var body: some View {
         VStack(spacing: 6) {
-            // 上部：アプリアイコン + アプリ名を大きめに表示（ディスプレイに応じてスケール）
-            HStack(spacing: 8) {
+            // 上部：アプリアイコン + アプリ名（+ ウィンドウ名）を表示（ディスプレイに応じてスケール）
+            HStack(spacing: 5) {
                 if let icon = window.appIcon {
                     Image(nsImage: icon)
                         .resizable()
@@ -103,8 +109,15 @@ struct WindowCell: View {
                 Text(window.appName)
                     .font(.system(size: SwitcherLayout.appNameFontSize, weight: .medium))
                     .lineLimit(1)
-                    .truncationMode(.tail)
+                    .layoutPriority(1)
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                if showsWindowTitle {
+                    Text(window.title)
+                        .font(.system(size: SwitcherLayout.appNameFontSize))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                }
                 Spacer(minLength: 0)
             }
             .frame(width: width, alignment: .leading)
