@@ -144,3 +144,7 @@ Sources/cTab/
 - AX ウィンドウと CGWindowID の対応付けに**非公開 API `_AXUIElementGetWindow`** を使用しています。将来の macOS で挙動が変わる可能性があり、取得失敗時はそのウィンドウをスキップします。
 - カスタムショートカット設定（トリガキーの変更）、ウィンドウ除外フィルタは未実装（将来拡張）。
 - 配布（他者への共有）には Developer ID 署名 + notarization が別途必要です。自己署名は手元での権限永続化のためのもので、Gatekeeper を通すものではありません。
+
+## ライセンス
+
+[MIT License](LICENSE) のもとで公開しています。Copyright (c) 2026 petitviolet。
