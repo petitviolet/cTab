@@ -11,6 +11,8 @@ final class SettingsModel {
     var version = "-"
     /// スイッチャー表示サイズの倍率（永続化された設定値の初期反映）。
     var sizeScale: CGFloat = AppSettings.sizeScale
+    /// 全ディスプレイ同時表示の ON/OFF。
+    var showOnAllDisplays: Bool = AppSettings.showOnAllDisplays
 
     func refresh() {
         accessibilityGranted = Permissions.hasAccessibility()

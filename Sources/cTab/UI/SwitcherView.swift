@@ -1,30 +1,22 @@
 import SwiftUI
 
-/// スイッチャー UI のレイアウト定数。ビュー・パネル・グリッド計算で共有する。
-///
-/// 表示先ディスプレイの幅に応じて `currentScale` を掛け、解像度の異なるディスプレイでも
-/// 見た目の大きさが揃うようにする。`currentScale` は present() でメインスレッドから設定し、
-/// 同じくメインスレッドの描画で同期的に読み出すため、単純な可変 static にしている。
+/// スイッチャー UI のレイアウト定数。スケールはディスプレイごとに異なるため、描画時に引数で渡す。
 enum SwitcherLayout {
-    static var currentScale: CGFloat = 1
-
-    /// 全体の基準サイズ係数。元の 100% が大きかったため 0.75 に調整（現在の 75% を新しい 100% に）。
-    /// present() で currentScale に掛けるため、これに連動して全要素が一律に縮む。
-    static let baseSizeFactor: CGFloat = 0.75
-
-    // 基準サイズ（scale=1 のとき）。currentScale を掛けてディスプレイに合わせる。
+    // 基準サイズ（scale=1 のとき）。
     private static let baseGridSpacing: CGFloat = 16
     private static let baseLabelHeight: CGFloat = 36
     private static let baseMaxCellWidth: CGFloat = 260
     private static let baseHeaderIconSize: CGFloat = 26
     private static let baseAppNameFontSize: CGFloat = 14
 
-    static var gridSpacing: CGFloat { baseGridSpacing * currentScale }
-    /// 各セル上部のヘッダー（アプリアイコン + アプリ名）に確保する高さ。
-    static var labelHeight: CGFloat { baseLabelHeight * currentScale }
-    static var maxCellWidth: CGFloat { baseMaxCellWidth * currentScale }
-    static var headerIconSize: CGFloat { baseHeaderIconSize * currentScale }
-    static var appNameFontSize: CGFloat { baseAppNameFontSize * currentScale }
+    /// 全体の基準サイズ係数（100% 表示の基準を調整）。スケール計算側で掛ける。
+    static let baseSizeFactor: CGFloat = 0.75
+
+    static func gridSpacing(_ scale: CGFloat) -> CGFloat { baseGridSpacing * scale }
+    static func labelHeight(_ scale: CGFloat) -> CGFloat { baseLabelHeight * scale }
+    static func maxCellWidth(_ scale: CGFloat) -> CGFloat { baseMaxCellWidth * scale }
+    static func headerIconSize(_ scale: CGFloat) -> CGFloat { baseHeaderIconSize * scale }
+    static func appNameFontSize(_ scale: CGFloat) -> CGFloat { baseAppNameFontSize * scale }
 
     // スケールしない固定値。
     static let panelCornerRadius: CGFloat = 16
@@ -41,32 +33,45 @@ enum SwitcherLayout {
     }
 }
 
+/// 1 ディスプレイ分の確定レイアウト（配置先・グリッド寸法・スケール）。
+struct ScreenLayout {
+    let screenFrame: CGRect
+    let columns: Int
+    let rows: Int
+    let cellWidth: CGFloat
+    let cellHeight: CGFloat
+    let scale: CGFloat
+}
+
 /// 画面内に収まるグリッドのスイッチャー本体（AltTab 風）。横スクロールしない。
 struct SwitcherView: View {
     let model: SwitcherViewModel
+    let layout: ScreenLayout
     /// セルをクリックしたとき（そのウィンドウへ切り替え）。
     let onSelect: (WindowInfo) -> Void
     /// セルの閉じるボタンを押したとき（そのウィンドウを閉じる）。
     let onClose: (WindowInfo) -> Void
 
     var body: some View {
+        let spacing = SwitcherLayout.gridSpacing(layout.scale)
         let gridColumns = Array(
-            repeating: GridItem(.fixed(model.cellWidth), spacing: SwitcherLayout.gridSpacing),
-            count: max(model.columns, 1)
+            repeating: GridItem(.fixed(layout.cellWidth), spacing: spacing),
+            count: max(layout.columns, 1)
         )
-        LazyVGrid(columns: gridColumns, spacing: SwitcherLayout.gridSpacing) {
+        LazyVGrid(columns: gridColumns, spacing: spacing) {
             ForEach(Array(model.windows.enumerated()), id: \.element.id) { index, window in
                 WindowCell(
                     window: window,
                     isSelected: index == model.selectedIndex,
-                    width: model.cellWidth,
-                    height: model.cellHeight,
+                    width: layout.cellWidth,
+                    height: layout.cellHeight,
+                    scale: layout.scale,
                     onSelect: { onSelect(window) },
                     onClose: { onClose(window) }
                 )
             }
         }
-        .padding(SwitcherLayout.gridSpacing)
+        .padding(spacing)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
             RoundedRectangle(cornerRadius: SwitcherLayout.panelCornerRadius, style: .continuous)
@@ -75,20 +80,21 @@ struct SwitcherView: View {
     }
 }
 
-/// 1 ウィンドウ分のセル。上部にアプリアイコン + アプリ名、下にサムネイル。サイズは可変。
+/// 1 ウィンドウ分のセル。上部にアプリアイコン + アプリ名（+ ウィンドウ名）、下にサムネイル。
 /// クリックで切り替え、ホバーで閉じるボタンを表示する。
 struct WindowCell: View {
     let window: WindowInfo
     let isSelected: Bool
     let width: CGFloat
     let height: CGFloat
+    let scale: CGFloat
     let onSelect: () -> Void
     let onClose: () -> Void
 
     @State private var isHovering = false
 
     private var thumbnailHeight: CGFloat {
-        max(height - SwitcherLayout.labelHeight, 1)
+        max(height - SwitcherLayout.labelHeight(scale), 1)
     }
 
     /// ウィンドウ名をアプリ名の横に表示するか（空、またはアプリ名と同一なら出さない）。
@@ -99,21 +105,21 @@ struct WindowCell: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            // 上部：アプリアイコン + アプリ名（+ ウィンドウ名）を表示（ディスプレイに応じてスケール）
+            // 上部：アプリアイコン + アプリ名（+ ウィンドウ名）
             HStack(spacing: 5) {
                 if let icon = window.appIcon {
                     Image(nsImage: icon)
                         .resizable()
-                        .frame(width: SwitcherLayout.headerIconSize, height: SwitcherLayout.headerIconSize)
+                        .frame(width: SwitcherLayout.headerIconSize(scale), height: SwitcherLayout.headerIconSize(scale))
                 }
                 Text(window.appName)
-                    .font(.system(size: SwitcherLayout.appNameFontSize, weight: .medium))
+                    .font(.system(size: SwitcherLayout.appNameFontSize(scale), weight: .medium))
                     .lineLimit(1)
                     .layoutPriority(1)
                     .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                 if showsWindowTitle {
                     Text(window.title)
-                        .font(.system(size: SwitcherLayout.appNameFontSize))
+                        .font(.system(size: SwitcherLayout.appNameFontSize(scale)))
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .foregroundStyle(isSelected ? Color.primary : Color.secondary)
@@ -159,9 +165,9 @@ struct WindowCell: View {
     private var closeButton: some View {
         Button(action: onClose) {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 18 * SwitcherLayout.currentScale))
+                .font(.system(size: 18 * scale))
                 .foregroundStyle(.white, .black.opacity(0.55))
-                .padding(6 * SwitcherLayout.currentScale)
+                .padding(6 * scale)
         }
         .buttonStyle(.plain)
         .help("このウィンドウを閉じる")

@@ -1,24 +1,16 @@
 import CoreGraphics
 import Observation
 
-/// スイッチャー UI の状態。SwiftUI が監視する。
+/// スイッチャー UI の共有状態（全ディスプレイのパネルが同じインスタンスを参照する）。
+/// レイアウト（列数・セルサイズ・スケール）はディスプレイごとに異なるため、ここには持たせない。
 @Observable
 final class SwitcherViewModel {
     var windows: [WindowInfo] = []
     var selectedIndex: Int = 0
-    var columns: Int = 1
-    var cellWidth: CGFloat = 220
-    var cellHeight: CGFloat = 170
-    /// パネルを中央配置する対象ディスプレイの frame。
-    var screenFrame: CGRect = .zero
 
-    func update(windows: [WindowInfo], selectedIndex: Int, layout: GridLayout.Result, screenFrame: CGRect) {
+    func update(windows: [WindowInfo], selectedIndex: Int) {
         self.windows = windows
         self.selectedIndex = selectedIndex
-        self.columns = layout.columns
-        self.cellWidth = layout.cellWidth
-        self.cellHeight = layout.cellHeight
-        self.screenFrame = screenFrame
     }
 
     /// 非同期に取得したサムネイルを該当ウィンドウへ反映する。

@@ -3,29 +3,21 @@ import CoreGraphics
 @testable import cTab
 
 final class SwitcherViewModelTests: XCTestCase {
-    private static let layout = GridLayout.Result(columns: 2, rows: 1, cellWidth: 200, cellHeight: 160)
-
     func testUpdateReplacesWindowsAndIndex() {
         let model = SwitcherViewModel()
         model.update(
             windows: [WindowInfoFixture.make(id: 1), WindowInfoFixture.make(id: 2)],
-            selectedIndex: 1,
-            layout: Self.layout,
-            screenFrame: .zero
+            selectedIndex: 1
         )
         XCTAssertEqual(model.windows.count, 2)
         XCTAssertEqual(model.selectedIndex, 1)
-        XCTAssertEqual(model.columns, 2)
-        XCTAssertEqual(model.cellWidth, 200)
     }
 
     func testSetThumbnailUpdatesMatchingWindow() {
         let model = SwitcherViewModel()
         model.update(
             windows: [WindowInfoFixture.make(id: 1), WindowInfoFixture.make(id: 2)],
-            selectedIndex: 0,
-            layout: Self.layout,
-            screenFrame: .zero
+            selectedIndex: 0
         )
         model.setThumbnail(Self.makeImage(), for: 2)
         XCTAssertNil(model.windows[0].thumbnail)
@@ -34,7 +26,7 @@ final class SwitcherViewModelTests: XCTestCase {
 
     func testSetThumbnailIgnoresUnknownID() {
         let model = SwitcherViewModel()
-        model.update(windows: [WindowInfoFixture.make(id: 1)], selectedIndex: 0, layout: Self.layout, screenFrame: .zero)
+        model.update(windows: [WindowInfoFixture.make(id: 1)], selectedIndex: 0)
         model.setThumbnail(Self.makeImage(), for: 999)
         XCTAssertNil(model.windows[0].thumbnail)
     }

@@ -40,8 +40,16 @@ struct SettingsView: View {
                 .padding(6)
             }
 
-            GroupBox("表示サイズ") {
+            GroupBox("表示") {
                 VStack(alignment: .leading, spacing: 8) {
+                    Toggle("全ディスプレイに表示", isOn: Binding(
+                        get: { model.showOnAllDisplays },
+                        set: { enabled in
+                            model.showOnAllDisplays = enabled
+                            AppSettings.showOnAllDisplays = enabled
+                        }
+                    ))
+                    Divider()
                     HStack {
                         Text("スイッチャーの大きさ")
                         Spacer()
@@ -96,7 +104,7 @@ struct SettingsView: View {
             }
         }
         .padding(22)
-        .frame(width: 470, height: 690)
+        .frame(width: 470, height: 740)
         .onAppear { model.refresh() }
         .onReceive(refreshTimer) { _ in model.refresh() }
     }

@@ -123,32 +123,38 @@ final class SwitcherController: EventTapControllerDelegate {
         startThumbnailCapture(for: windows)
     }
 
-    /// ウィンドウ一覧をグリッド計算してパネルを表示する。
+    /// ウィンドウ一覧をディスプレイごとに計算してパネルを表示する。
     /// close/quit 後の再表示にも使う（既存のサムネイルを保持したまま再レイアウトする）。
     private func present(_ windows: [WindowInfo], selectedIndex: Int) {
-        let screen = targetScreen()
-        let screenFrame = screen?.frame ?? .zero
-        let visible = screen?.visibleFrame.size ?? CGSize(width: 1440, height: 900)
+        let screens = targetScreens()
+        guard !screens.isEmpty else { return }
 
-        // 表示先ディスプレイの自動スケール × 設定のサイズ倍率 × 基準サイズ係数（描画前に設定）。
-        SwitcherLayout.currentScale = SwitcherLayout.scale(forWidth: visible.width)
-            * AppSettings.sizeScale
-            * SwitcherLayout.baseSizeFactor
+        let layouts = screens.map { screenLayout(for: $0, windowCount: windows.count) }
+        // 先頭（最前面ウィンドウのある画面）の列数を矢印ナビの基準にする。
+        currentColumns = layouts.first?.columns ?? 1
 
-        let layout = solveLayout(count: windows.count, visible: visible)
-        currentColumns = layout.columns
-        model.update(
-            windows: windows,
-            selectedIndex: Navigation.clamp(selectedIndex, count: windows.count),
-            layout: layout,
-            screenFrame: screenFrame
-        )
+        model.update(windows: windows, selectedIndex: Navigation.clamp(selectedIndex, count: windows.count))
         isSwitcherActive = true
-        panel.show()
-        Log.windows.info("present scale \(Int(SwitcherLayout.currentScale * 100), privacy: .public)% on \(Int(visible.width), privacy: .public)pt")
+        panel.show(layouts: layouts)
+        Log.windows.info("present on \(layouts.count, privacy: .public) display(s)")
     }
 
-    /// スイッチャーを表示する対象ディスプレイ（最前面ウィンドウのある画面、無ければメイン）。
+    /// 表示する対象ディスプレイ群。全ディスプレイ設定が ON なら全画面、OFF なら最前面ウィンドウのある画面のみ。
+    /// 先頭は最前面ウィンドウのある画面（key パネル兼 矢印ナビの基準）。
+    private func targetScreens() -> [NSScreen] {
+        let front = targetScreen()
+        guard AppSettings.showOnAllDisplays else {
+            return front.map { [$0] } ?? []
+        }
+        var screens = NSScreen.screens
+        if let front, let index = screens.firstIndex(of: front) {
+            screens.remove(at: index)
+            screens.insert(front, at: 0)
+        }
+        return screens
+    }
+
+    /// スイッチャーの基準となるディスプレイ（最前面ウィンドウのある画面、無ければメイン）。
     private func targetScreen() -> NSScreen? {
         frontmostWindowScreen() ?? NSScreen.main
     }
@@ -192,18 +198,31 @@ final class SwitcherController: EventTapControllerDelegate {
         return model.windows.indices.contains(index) ? model.windows[index] : nil
     }
 
-    private func solveLayout(count: Int, visible: CGSize) -> GridLayout.Result {
+    /// 指定ディスプレイの確定レイアウトを計算する（スケール = 自動スケール × サイズ倍率 × 基準係数）。
+    private func screenLayout(for screen: NSScreen, windowCount: Int) -> ScreenLayout {
+        let visible = screen.visibleFrame.size
+        let scale = SwitcherLayout.scale(forWidth: visible.width)
+            * AppSettings.sizeScale
+            * SwitcherLayout.baseSizeFactor
         let available = CGSize(
             width: visible.width - SwitcherLayout.screenMargin * 2,
             height: visible.height - SwitcherLayout.screenMargin * 2
         )
-        return GridLayout.solve(
-            count: count,
+        let result = GridLayout.solve(
+            count: windowCount,
             available: available,
-            spacing: SwitcherLayout.gridSpacing,
-            labelHeight: SwitcherLayout.labelHeight,
+            spacing: SwitcherLayout.gridSpacing(scale),
+            labelHeight: SwitcherLayout.labelHeight(scale),
             thumbnailAspect: SwitcherLayout.thumbnailAspect,
-            maxCellWidth: SwitcherLayout.maxCellWidth
+            maxCellWidth: SwitcherLayout.maxCellWidth(scale)
+        )
+        return ScreenLayout(
+            screenFrame: screen.frame,
+            columns: result.columns,
+            rows: result.rows,
+            cellWidth: result.cellWidth,
+            cellHeight: result.cellHeight,
+            scale: scale
         )
     }
 
