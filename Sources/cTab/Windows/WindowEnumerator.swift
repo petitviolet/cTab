@@ -26,6 +26,9 @@ enum WindowEnumerator {
         let start = CFAbsoluteTimeGetCurrent()
         var result: [WindowInfo] = []
 
+        // CGWindowList から重なり順（front-to-back）と各ウィンドウの矩形を先に取得する。
+        let onScreen = onScreenInfo()
+
         let apps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
         for app in apps {
             let pid = app.processIdentifier
@@ -44,7 +47,7 @@ enum WindowEnumerator {
 
             for axWindow in axWindows {
                 AXUIElementSetMessagingTimeout(axWindow, messagingTimeout)
-                guard let info = makeWindowInfo(axWindow, pid: pid, appName: appName, icon: icon) else { continue }
+                guard let info = makeWindowInfo(axWindow, pid: pid, appName: appName, icon: icon, boundsByID: onScreen.bounds) else { continue }
                 result.append(info)
             }
         }
@@ -52,9 +55,8 @@ enum WindowEnumerator {
         // 画面の重なり順（front-to-back）で並べ替える。先頭が最前面（=現在のウィンドウ）になり、
         // 標準 Command+Tab と同じく「直前のウィンドウ」を初期選択（index 1）できる。
         // z-order に現れないウィンドウ（最小化など）は末尾に回す。
-        let zOrder = onScreenZOrder()
         let sorted = result.sorted { lhs, rhs in
-            (zOrder[lhs.id] ?? Int.max) < (zOrder[rhs.id] ?? Int.max)
+            (onScreen.order[lhs.id] ?? Int.max) < (onScreen.order[rhs.id] ?? Int.max)
         }
 
         let elapsedMs = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
@@ -63,7 +65,7 @@ enum WindowEnumerator {
     }
 
     /// 1 ウィンドウ分の属性を読み、標準ウィンドウなら WindowInfo を作る。対象外なら nil。
-    private static func makeWindowInfo(_ window: AXUIElement, pid: pid_t, appName: String, icon: NSImage?) -> WindowInfo? {
+    private static func makeWindowInfo(_ window: AXUIElement, pid: pid_t, appName: String, icon: NSImage?, boundsByID: [CGWindowID: CGRect]) -> WindowInfo? {
         let role: String?
         let subrole: String?
         let title: String
@@ -90,6 +92,9 @@ enum WindowEnumerator {
         var windowID: CGWindowID = 0
         guard _AXUIElementGetWindow(window, &windowID) == .success, windowID != 0 else { return nil }
 
+        // CGWindowList の矩形から、このウィンドウが乗っているディスプレイを求める（不明なら .zero）。
+        let screenFrame = boundsByID[windowID].map { displayFrame(containing: $0) } ?? CGRect.zero
+
         return WindowInfo(
             id: windowID,
             pid: pid,
@@ -97,6 +102,7 @@ enum WindowEnumerator {
             title: title,
             appIcon: icon,
             axElement: window,
+            screenFrame: screenFrame,
             isMinimized: minimized,
             thumbnail: nil
         )
@@ -129,19 +135,33 @@ enum WindowEnumerator {
         return result
     }
 
-    /// CGWindowList から可視ウィンドウの重なり順（front-to-back）を取得する。
-    private static func onScreenZOrder() -> [CGWindowID: Int] {
+    /// CGWindowList から可視ウィンドウの重なり順（front-to-back）と矩形を取得する。
+    private static func onScreenInfo() -> (order: [CGWindowID: Int], bounds: [CGWindowID: CGRect]) {
         let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
         guard let infoList = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else {
-            return [:]
+            return ([:], [:])
         }
         var order: [CGWindowID: Int] = [:]
+        var bounds: [CGWindowID: CGRect] = [:]
         for (index, info) in infoList.enumerated() {
-            if let number = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value {
-                order[CGWindowID(number)] = index
+            guard let number = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value else { continue }
+            let id = CGWindowID(number)
+            order[id] = index
+            if let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
+               let rect = CGRect(dictionaryRepresentation: boundsDict) {
+                bounds[id] = rect
             }
         }
-        return order
+        return (order, bounds)
+    }
+
+    /// CG 座標（左上原点・y 下向き）の矩形の中心が乗っているディスプレイの frame を返す。
+    private static func displayFrame(containing cgBounds: CGRect) -> CGRect {
+        // CG 座標を AppKit 座標（左下原点）へ変換するため、メニューバー画面（原点 (0,0)）の高さで反転する。
+        let primary = NSScreen.screens.first { $0.frame.origin == .zero } ?? NSScreen.main
+        guard let primaryHeight = primary?.frame.height else { return .zero }
+        let center = CGPoint(x: cgBounds.midX, y: primaryHeight - cgBounds.midY)
+        return NSScreen.screens.first { NSMouseInRect(center, $0.frame, false) }?.frame ?? .zero
     }
 
     // MARK: - 個別取得フォールバック

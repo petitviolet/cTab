@@ -7,6 +7,8 @@ import Observation
 final class SwitcherViewModel {
     var windows: [WindowInfo] = []
     var selectedIndex: Int = 0
+    /// 現在アクティブ（マウスカーソルのある）ディスプレイの frame。これ以外の画面のパネルは減光する。
+    var activeScreenFrame: CGRect = .zero
 
     func update(windows: [WindowInfo], selectedIndex: Int) {
         self.windows = windows

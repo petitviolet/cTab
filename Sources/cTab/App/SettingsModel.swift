@@ -13,6 +13,10 @@ final class SettingsModel {
     var sizeScale: CGFloat = AppSettings.sizeScale
     /// 全ディスプレイ同時表示の ON/OFF。
     var showOnAllDisplays: Bool = AppSettings.showOnAllDisplays
+    /// アクティブディスプレイ強調の ON/OFF。
+    var highlightActiveDisplay: Bool = AppSettings.highlightActiveDisplay
+    /// アクティブ画面にないウィンドウの不透明度。
+    var inactiveDisplayOpacity: CGFloat = AppSettings.inactiveDisplayOpacity
 
     func refresh() {
         accessibilityGranted = Permissions.hasAccessibility()

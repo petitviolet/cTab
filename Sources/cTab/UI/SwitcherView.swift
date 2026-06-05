@@ -26,10 +26,13 @@ enum SwitcherLayout {
     /// サムネイル領域の幅/高さ比。
     static let thumbnailAspect: CGFloat = 220.0 / 140.0
 
-    /// ディスプレイ幅から表示スケールを求める。基準（14インチ相当）より大きい画面では拡大、縮小はしない。
+    /// スケール算出の基準ディスプレイ幅（14インチ相当）と自動拡大の上限。
+    private static let scaleBaselineWidth: CGFloat = 1512
+    private static let maxAutoScale: CGFloat = 1.8
+
+    /// ディスプレイ幅から表示スケールを求める。基準より大きい画面では拡大、縮小はしない。
     static func scale(forWidth width: CGFloat) -> CGFloat {
-        let baseline: CGFloat = 1512
-        return min(max(width / baseline, 1.0), 1.8)
+        min(max(width / scaleBaselineWidth, 1.0), maxAutoScale)
     }
 }
 
@@ -58,11 +61,14 @@ struct SwitcherView: View {
             repeating: GridItem(.fixed(layout.cellWidth), spacing: spacing),
             count: max(layout.columns, 1)
         )
+        let inactiveOpacity = AppSettings.highlightActiveDisplay ? AppSettings.inactiveDisplayOpacity : 1.0
         LazyVGrid(columns: gridColumns, spacing: spacing) {
             ForEach(Array(model.windows.enumerated()), id: \.element.id) { index, window in
                 WindowCell(
                     window: window,
                     isSelected: index == model.selectedIndex,
+                    isOnActiveDisplay: isOnActiveDisplay(window),
+                    inactiveDisplayOpacity: inactiveOpacity,
                     width: layout.cellWidth,
                     height: layout.cellHeight,
                     scale: layout.scale,
@@ -78,6 +84,14 @@ struct SwitcherView: View {
                 .fill(.ultraThinMaterial)
         )
     }
+
+    /// このウィンドウがアクティブ（マウスカーソルのある）ディスプレイにあるか。
+    /// アクティブ画面が未設定、またはウィンドウの所在が不明（最小化など）なら減光しない（true 扱い）。
+    private func isOnActiveDisplay(_ window: WindowInfo) -> Bool {
+        model.activeScreenFrame == .zero
+            || window.screenFrame == .zero
+            || window.screenFrame == model.activeScreenFrame
+    }
 }
 
 /// 1 ウィンドウ分のセル。上部にアプリアイコン + アプリ名（+ ウィンドウ名）、下にサムネイル。
@@ -85,6 +99,10 @@ struct SwitcherView: View {
 struct WindowCell: View {
     let window: WindowInfo
     let isSelected: Bool
+    /// このウィンドウがアクティブ（マウスのある）ディスプレイにあるか。false なら減光する。
+    let isOnActiveDisplay: Bool
+    /// 非アクティブディスプレイのウィンドウに適用する不透明度（1.0 = 減光なし）。
+    let inactiveDisplayOpacity: CGFloat
     let width: CGFloat
     let height: CGFloat
     let scale: CGFloat
@@ -92,6 +110,13 @@ struct WindowCell: View {
     let onClose: () -> Void
 
     @State private var isHovering = false
+
+    /// 最小化と「非アクティブディスプレイ」の両方を反映したセルの不透明度。
+    private var cellOpacity: Double {
+        let minimizedFactor = window.isMinimized ? 0.55 : 1.0
+        let displayFactor = isOnActiveDisplay ? 1.0 : Double(inactiveDisplayOpacity)
+        return minimizedFactor * displayFactor
+    }
 
     private var thumbnailHeight: CGFloat {
         max(height - SwitcherLayout.labelHeight(scale), 1)
@@ -155,7 +180,7 @@ struct WindowCell: View {
             }
         }
         .frame(width: width, height: height)
-        .opacity(window.isMinimized ? 0.55 : 1)
+        .opacity(cellOpacity)
         .contentShape(Rectangle())
         .onTapGesture { onSelect() }
         .onHover { hovering in isHovering = hovering }

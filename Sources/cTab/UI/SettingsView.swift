@@ -6,10 +6,12 @@ struct SettingsView: View {
     private let refreshTimer = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            header
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
 
-            GroupBox("権限") {
+                    GroupBox("権限") {
                 VStack(alignment: .leading, spacing: 10) {
                     PermissionRow(
                         title: "アクセシビリティ（必須）",
@@ -77,6 +79,43 @@ struct SettingsView: View {
                 .padding(6)
             }
 
+            GroupBox("アクティブディスプレイ") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle("マウスのある画面のウィンドウを強調", isOn: Binding(
+                        get: { model.highlightActiveDisplay },
+                        set: { enabled in
+                            model.highlightActiveDisplay = enabled
+                            AppSettings.highlightActiveDisplay = enabled
+                        }
+                    ))
+                    HStack {
+                        Text("他画面のウィンドウの濃さ")
+                        Spacer()
+                        Text("\(Int((model.inactiveDisplayOpacity * 100).rounded()))%")
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                    Slider(
+                        value: Binding(
+                            get: { Double(model.inactiveDisplayOpacity) },
+                            set: { newValue in
+                                let opacity = CGFloat(newValue)
+                                model.inactiveDisplayOpacity = opacity
+                                AppSettings.inactiveDisplayOpacity = opacity
+                            }
+                        ),
+                        in: Double(AppSettings.minInactiveDisplayOpacity)...Double(AppSettings.maxInactiveDisplayOpacity),
+                        step: 0.05
+                    )
+                    .disabled(!model.highlightActiveDisplay)
+                    Text("複数ディスプレイ時、マウスのある画面にないウィンドウの濃さ（低いほど薄い）。")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(6)
+            }
+
             GroupBox("使い方") {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("• Command を押しながら Tab：スイッチャーを開く / 次へ")
@@ -91,8 +130,11 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(6)
             }
+                }
+                .padding(22)
+            }
 
-            Spacer(minLength: 0)
+            Divider()
 
             HStack(spacing: 10) {
                 Text("権限を変更したら「再起動」してください")
@@ -102,9 +144,10 @@ struct SettingsView: View {
                 Button("再起動") { Relauncher.relaunch() }
                 Button("cTab を終了") { NSApp.terminate(nil) }
             }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 12)
         }
-        .padding(22)
-        .frame(width: 470, height: 740)
+        .frame(width: 470, height: 640)
         .onAppear { model.refresh() }
         .onReceive(refreshTimer) { _ in model.refresh() }
     }

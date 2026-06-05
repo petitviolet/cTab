@@ -15,6 +15,8 @@ final class SwitcherController: EventTapControllerDelegate {
     private var thumbnailTask: Task<Void, Never>?
     private var didRequestScreenRecording = false
     private var currentColumns = 1
+    /// 表示中だけ有効なマウス移動モニタ（アクティブ画面の追従用）。
+    private var mouseMonitors: [Any] = []
 
     private(set) var isSwitcherActive = false
 
@@ -133,10 +135,47 @@ final class SwitcherController: EventTapControllerDelegate {
         // 先頭（最前面ウィンドウのある画面）の列数を矢印ナビの基準にする。
         currentColumns = layouts.first?.columns ?? 1
 
+        // マウスカーソルのある画面をアクティブにする（どのディスプレイでも可。無ければ先頭画面）。
+        let active = mouseScreen()?.frame ?? layouts[0].screenFrame
+        model.activeScreenFrame = active
+
         model.update(windows: windows, selectedIndex: Navigation.clamp(selectedIndex, count: windows.count))
         isSwitcherActive = true
-        panel.show(layouts: layouts)
+        panel.show(layouts: layouts, activeScreenFrame: active)
+        startMouseTracking()
         Log.windows.info("present on \(layouts.count, privacy: .public) display(s)")
+    }
+
+    private func mouseScreen() -> NSScreen? {
+        let location = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(location, $0.frame, false) }
+    }
+
+    /// 表示中のマウス移動を監視し、別ディスプレイへ移ったらアクティブ画面を切り替える。
+    /// ディスプレイが複数あるときのみ監視する（1枚なら全ウィンドウが同一画面で区別不要）。
+    /// cTab はアクティブ化しない（`.nonactivatingPanel`）ためマウスイベントは他アプリへ流れる。
+    /// よって global monitor だけで全位置を捕捉でき、local monitor は不要。
+    private func startMouseTracking() {
+        guard mouseMonitors.isEmpty, NSScreen.screens.count > 1 else { return }
+        if let global = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved], handler: { [weak self] _ in
+            self?.handleMouseMoved()
+        }) {
+            mouseMonitors.append(global)
+        }
+    }
+
+    private func stopMouseTracking() {
+        mouseMonitors.forEach { NSEvent.removeMonitor($0) }
+        mouseMonitors.removeAll()
+    }
+
+    private func handleMouseMoved() {
+        guard isSwitcherActive,
+              let frame = mouseScreen()?.frame,
+              frame != model.activeScreenFrame else { return }
+        model.activeScreenFrame = frame
+        // パネルがある画面なら key を移す（無ければ no-op）。
+        panel.makeActive(screenFrame: frame)
     }
 
     /// 表示する対象ディスプレイ群。全ディスプレイ設定が ON なら全画面、OFF なら最前面ウィンドウのある画面のみ。
@@ -246,6 +285,7 @@ final class SwitcherController: EventTapControllerDelegate {
     private func close() {
         isSwitcherActive = false
         panel.hide()
+        stopMouseTracking()
         // 進行中のサムネイル取得はキャンセルしない。完了させてキャッシュを温めておくことで、
         // 素早く開閉してもキャッシュが蓄積される。古いタスクは次回 open の startThumbnailCapture が置き換える。
     }

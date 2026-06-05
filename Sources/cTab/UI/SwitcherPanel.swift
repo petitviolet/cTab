@@ -10,6 +10,8 @@ final class SwitcherPanel {
     private let onSelect: (WindowInfo) -> Void
     private let onClose: (WindowInfo) -> Void
     private var panels: [NSPanel] = []
+    /// panels と並行する各パネルの配置先ディスプレイ frame（active 切替の検索用）。
+    private var panelScreenFrames: [CGRect] = []
 
     init(
         model: SwitcherViewModel,
@@ -22,7 +24,8 @@ final class SwitcherPanel {
     }
 
     /// 各ディスプレイのレイアウトに合わせてパネルを表示する（要素数だけパネルを用意）。
-    func show(layouts: [ScreenLayout]) {
+    /// `activeScreenFrame` のディスプレイのパネルを key にして、その画面でマウス操作を効かせる。
+    func show(layouts: [ScreenLayout], activeScreenFrame: CGRect) {
         guard !layouts.isEmpty else { hide(); return }
 
         // パネル枚数をディスプレイ数に合わせる。
@@ -31,9 +34,7 @@ final class SwitcherPanel {
 
         for (index, layout) in layouts.enumerated() {
             let panel = panels[index]
-            panel.contentView = NSHostingView(
-                rootView: SwitcherView(model: model, layout: layout, onSelect: onSelect, onClose: onClose)
-            )
+            setRootView(of: panel, layout: layout)
             let content = contentSize(for: layout)
             let frame = NSRect(
                 x: layout.screenFrame.midX - content.width / 2,
@@ -43,12 +44,20 @@ final class SwitcherPanel {
             )
             panel.setFrame(frame, display: true)
         }
+        panelScreenFrames = layouts.map(\.screenFrame)
 
-        // 先頭（最前面ウィンドウのある画面）を key にしてマウス操作を受け取りやすくする。
+        // アクティブ画面のパネルを key に（無ければ先頭）。残りは表示のみ。
+        let activeIndex = panelScreenFrames.firstIndex(of: activeScreenFrame) ?? 0
         for (index, panel) in panels.enumerated() {
-            if index == 0 { panel.makeKeyAndOrderFront(nil) }
+            if index == activeIndex { panel.makeKeyAndOrderFront(nil) }
             panel.orderFrontRegardless()
         }
+    }
+
+    /// 表示中に、指定ディスプレイのパネルを key へ切り替える（マウス追従用）。
+    func makeActive(screenFrame: CGRect) {
+        guard let index = panelScreenFrames.firstIndex(of: screenFrame) else { return }
+        panels[index].makeKeyAndOrderFront(nil)
     }
 
     func hide() {
@@ -56,14 +65,23 @@ final class SwitcherPanel {
     }
 
     /// 初回表示を速くするため、パネル（SwiftUI ホスティングビュー）を 1 枚事前生成しておく。
+    /// dummy レイアウトは表示時に必ず上書きされるプレースホルダ。
     func prewarm() {
         guard panels.isEmpty else { return }
         let panel = makePanel()
         let dummy = ScreenLayout(screenFrame: .zero, columns: 1, rows: 0, cellWidth: 200, cellHeight: 160, scale: 1)
-        panel.contentView = NSHostingView(
-            rootView: SwitcherView(model: model, layout: dummy, onSelect: onSelect, onClose: onClose)
-        )
+        setRootView(of: panel, layout: dummy)
         panels.append(panel)
+    }
+
+    /// パネルの SwiftUI 中身を設定する。既存の NSHostingView があれば rootView 差し替えで再利用する。
+    private func setRootView(of panel: NSPanel, layout: ScreenLayout) {
+        let root = SwitcherView(model: model, layout: layout, onSelect: onSelect, onClose: onClose)
+        if let hosting = panel.contentView as? NSHostingView<SwitcherView> {
+            hosting.rootView = root
+        } else {
+            panel.contentView = NSHostingView(rootView: root)
+        }
     }
 
     private func contentSize(for layout: ScreenLayout) -> CGSize {

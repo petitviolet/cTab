@@ -12,6 +12,8 @@ struct WindowInfo: Identifiable {
     let title: String
     let appIcon: NSImage?
     let axElement: AXUIElement
+    /// このウィンドウが乗っているディスプレイの frame。不明（最小化など）は .zero。
+    let screenFrame: CGRect
     var isMinimized: Bool
     var thumbnail: CGImage?
 
