@@ -49,12 +49,21 @@ final class SwitcherController: EventTapControllerDelegate {
 
     func handleTriggerReleased() {
         guard isSwitcherActive else { return }
-        commit()
+        // ホールドモードのみ、修飾キーを離したら確定する。トグルモードは Return で確定。
+        if AppSettings.activationMode == .hold {
+            commit()
+        }
     }
 
     func handleEscape() -> Bool {
         guard isSwitcherActive else { return false }
         close()
+        return true
+    }
+
+    func handleConfirm() -> Bool {
+        guard isSwitcherActive else { return false }
+        commit()
         return true
     }
 

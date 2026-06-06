@@ -53,7 +53,18 @@ struct SettingsView: View {
                         Text("Tab (⇥)").tag(Int(HotKeyMatcher.tabKeyCode))
                         Text("Backtick (`)").tag(Int(HotKeyMatcher.graveKeyCode))
                     }
-                    Text("修飾キーを押しながらトリガキーでスイッチャーを開きます（変更は即時反映）。Command 以外にすると標準の Command+Tab はそのまま使えます。")
+                    Picker("起動方式", selection: Binding(
+                        get: { model.activationMode },
+                        set: { value in
+                            model.activationMode = value
+                            AppSettings.activationMode = value
+                        }
+                    )) {
+                        ForEach(ActivationMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    Text("修飾キーを押しながらトリガキーでスイッチャーを開きます（変更は即時反映）。Command 以外にすると標準の Command+Tab はそのまま使えます。トグルでは修飾キーを離しても開いたまま、Return で確定・Escape でキャンセルです。")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -164,7 +175,7 @@ struct SettingsView: View {
                     Text("• Command + Q：選択中のアプリを終了")
                     Text("• Command + M：選択中のウィンドウを最小化")
                     Text("• Command + F：選択中のウィンドウをフルスクリーン切替")
-                    Text("• Command を離す：切り替え確定 / Escape：キャンセル")
+                    Text("• Command を離す：切り替え確定（ホールド時）/ Return：確定（トグル時）/ Escape：キャンセル")
                 }
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)

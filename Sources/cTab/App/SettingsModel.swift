@@ -19,6 +19,8 @@ final class SettingsModel {
     var triggerModifier: TriggerModifier = AppSettings.triggerModifier
     /// トリガキーの仮想キーコード。
     var triggerKeyCode: Int = AppSettings.triggerKeyCode
+    /// 起動方式（ホールド/トグル）。
+    var activationMode: ActivationMode = AppSettings.activationMode
     /// アクティブディスプレイ強調の ON/OFF。
     var highlightActiveDisplay: Bool = AppSettings.highlightActiveDisplay
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度。

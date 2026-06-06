@@ -10,6 +10,8 @@ protocol EventTapControllerDelegate: AnyObject {
     func handleTriggerReleased()
     /// Escape が押された。戻り値 true で消費。
     func handleEscape() -> Bool
+    /// Return / Enter が押された（トグルモードの確定）。戻り値 true で消費。
+    func handleConfirm() -> Bool
     /// 方向キーで選択を移動する。戻り値 true で消費。
     func handleArrow(_ direction: Direction) -> Bool
     /// 選択中ウィンドウを閉じる（Command+W）。戻り値 true で消費。
@@ -132,6 +134,13 @@ final class EventTapController {
                 }
                 if HotKeyMatcher.isCancel(keyCode: keyCode) {
                     return passthrough(event, consumed: delegate?.handleEscape() ?? false)
+                }
+                if HotKeyMatcher.isConfirm(keyCode: keyCode) {
+                    return passthrough(event, consumed: delegate?.handleConfirm() ?? false)
+                }
+                // トグルモードで修飾キーを離した後、トリガキー単独でも選択を進める（Shift で逆順）。
+                if keyCode == triggerKey {
+                    return passthrough(event, consumed: delegate?.handleSwitchKey(reverse: HotKeyMatcher.isReverse(flags: flags)) ?? false)
                 }
             }
 

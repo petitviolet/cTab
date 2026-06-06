@@ -1,6 +1,23 @@
 import CoreGraphics
 import Foundation
 
+/// スイッチャーの起動方式。
+enum ActivationMode: String, CaseIterable, Identifiable {
+    /// 修飾キーを押している間だけ表示し、離すと確定（標準の Command+Tab と同じ）。
+    case hold
+    /// 一度トリガを押すと開いたまま。修飾キーを離しても確定せず、Return で確定・Escape でキャンセル。
+    case toggle
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .hold: return "ホールド（離して確定）"
+        case .toggle: return "トグル（Return で確定）"
+        }
+    }
+}
+
 /// 永続化するユーザー設定（UserDefaults）。
 ///
 /// ここで扱うのは表示サイズ倍率などの非機微な設定値のみ。
@@ -13,6 +30,7 @@ enum AppSettings {
     private static let includeOtherSpacesKey = "includeOtherSpaces"
     private static let triggerModifierKey = "triggerModifier"
     private static let triggerKeyCodeKey = "triggerKeyCode"
+    private static let activationModeKey = "activationMode"
 
     static let defaultSizeScale: CGFloat = 1.0
     static let minSizeScale: CGFloat = 0.5
@@ -59,6 +77,12 @@ enum AppSettings {
     static var triggerKeyCode: Int {
         get { (UserDefaults.standard.object(forKey: triggerKeyCodeKey) as? Int) ?? Int(HotKeyMatcher.tabKeyCode) }
         set { UserDefaults.standard.set(newValue, forKey: triggerKeyCodeKey) }
+    }
+
+    /// スイッチャーの起動方式（既定 hold）。
+    static var activationMode: ActivationMode {
+        get { ActivationMode(rawValue: UserDefaults.standard.string(forKey: activationModeKey) ?? "") ?? .hold }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: activationModeKey) }
     }
 
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（高いほど黒い）。
