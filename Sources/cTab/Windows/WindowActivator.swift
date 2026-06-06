@@ -53,4 +53,38 @@ enum WindowActivator {
         Log.windows.info("requested quit for pid \(window.pid, privacy: .public)")
         return requested
     }
+
+    /// ウィンドウを最小化する。実行できたら true。
+    @discardableResult
+    static func minimize(_ window: WindowInfo) -> Bool {
+        let err = AXUIElementSetAttributeValue(window.axElement, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
+        if err != .success {
+            Log.windows.error("failed to minimize window: \(err.rawValue, privacy: .public)")
+            return false
+        }
+        return true
+    }
+
+    /// ウィンドウのフルスクリーン状態を切り替える。切り替えられたら true。
+    /// 非公開の kAXFullScreenAttribute を優先し、無ければフルスクリーンボタンの押下にフォールバックする。
+    @discardableResult
+    static func toggleFullScreen(_ window: WindowInfo) -> Bool {
+        let attribute = "AXFullScreen" as CFString
+        var current: CFTypeRef?
+        if AXUIElementCopyAttributeValue(window.axElement, attribute, &current) == .success,
+           let isFull = current as? Bool {
+            let next: CFTypeRef = isFull ? kCFBooleanFalse : kCFBooleanTrue
+            let err = AXUIElementSetAttributeValue(window.axElement, attribute, next)
+            if err == .success { return true }
+            Log.windows.error("failed to set fullscreen: \(err.rawValue, privacy: .public)")
+        }
+
+        // フォールバック: フルスクリーンボタン（緑ボタン）を押下する。
+        var button: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(window.axElement, "AXFullScreenButton" as CFString, &button) == .success,
+              let button, CFGetTypeID(button) == AXUIElementGetTypeID() else {
+            return false
+        }
+        return AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString) == .success
+    }
 }

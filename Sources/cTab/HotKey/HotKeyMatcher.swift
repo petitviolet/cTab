@@ -13,6 +13,10 @@ enum HotKeyMatcher {
     static let wKeyCode: Int64 = 0x0D
     /// Q キーの仮想キーコード（kVK_ANSI_Q）。
     static let qKeyCode: Int64 = 0x0C
+    /// M キーの仮想キーコード（kVK_ANSI_M）。
+    static let mKeyCode: Int64 = 0x2E
+    /// F キーの仮想キーコード（kVK_ANSI_F）。
+    static let fKeyCode: Int64 = 0x03
     /// 矢印キーの仮想キーコード（kVK_LeftArrow/RightArrow/DownArrow/UpArrow）。
     static let leftArrowKeyCode: Int64 = 0x7B
     static let rightArrowKeyCode: Int64 = 0x7C
@@ -58,5 +62,15 @@ enum HotKeyMatcher {
     /// Command+Q（選択アプリを終了する）か。
     static func isQuitApp(keyCode: Int64, flags: CGEventFlags) -> Bool {
         keyCode == qKeyCode && flags.contains(.maskCommand)
+    }
+
+    /// Command+M（選択ウィンドウを最小化する）か。
+    static func isMinimize(keyCode: Int64, flags: CGEventFlags) -> Bool {
+        keyCode == mKeyCode && flags.contains(.maskCommand)
+    }
+
+    /// Command+F（選択ウィンドウのフルスクリーンを切り替える）か。
+    static func isFullScreen(keyCode: Int64, flags: CGEventFlags) -> Bool {
+        keyCode == fKeyCode && flags.contains(.maskCommand)
     }
 }

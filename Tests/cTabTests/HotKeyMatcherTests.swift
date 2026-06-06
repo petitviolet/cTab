@@ -57,4 +57,16 @@ final class HotKeyMatcherTests: XCTestCase {
         XCTAssertFalse(HotKeyMatcher.isQuitApp(keyCode: 0x0C, flags: []))
         XCTAssertFalse(HotKeyMatcher.isQuitApp(keyCode: 0x0D, flags: .maskCommand))
     }
+
+    func testMinimizeRequiresCommandAndM() {
+        XCTAssertTrue(HotKeyMatcher.isMinimize(keyCode: 0x2E, flags: .maskCommand))
+        XCTAssertFalse(HotKeyMatcher.isMinimize(keyCode: 0x2E, flags: []))
+        XCTAssertFalse(HotKeyMatcher.isMinimize(keyCode: 0x0D, flags: .maskCommand))
+    }
+
+    func testFullScreenRequiresCommandAndF() {
+        XCTAssertTrue(HotKeyMatcher.isFullScreen(keyCode: 0x03, flags: .maskCommand))
+        XCTAssertFalse(HotKeyMatcher.isFullScreen(keyCode: 0x03, flags: []))
+        XCTAssertFalse(HotKeyMatcher.isFullScreen(keyCode: 0x2E, flags: .maskCommand))
+    }
 }

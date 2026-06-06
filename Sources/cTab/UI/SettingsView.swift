@@ -130,6 +130,8 @@ struct SettingsView: View {
                     Text("• Command を押しながら 矢印キー（←→↑↓）：グリッド上を移動")
                     Text("• Command + W：選択中のウィンドウを閉じる")
                     Text("• Command + Q：選択中のアプリを終了")
+                    Text("• Command + M：選択中のウィンドウを最小化")
+                    Text("• Command + F：選択中のウィンドウをフルスクリーン切替")
                     Text("• Command を離す：切り替え確定 / Escape：キャンセル")
                 }
                 .font(.system(size: 12))

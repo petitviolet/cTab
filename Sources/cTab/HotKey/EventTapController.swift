@@ -16,6 +16,10 @@ protocol EventTapControllerDelegate: AnyObject {
     func handleCloseSelectedWindow() -> Bool
     /// 選択中ウィンドウのアプリを終了する（Command+Q）。戻り値 true で消費。
     func handleQuitSelectedApp() -> Bool
+    /// 選択中ウィンドウを最小化する（Command+M）。戻り値 true で消費。
+    func handleMinimizeSelectedWindow() -> Bool
+    /// 選択中ウィンドウのフルスクリーンを切り替える（Command+F）。戻り値 true で消費。
+    func handleToggleFullScreen() -> Bool
     /// スイッチャーが表示中か。イベント消費要否の判断に使う。
     var isSwitcherActive: Bool { get }
 }
@@ -112,6 +116,12 @@ final class EventTapController {
                 }
                 if HotKeyMatcher.isQuitApp(keyCode: keyCode, flags: flags) {
                     return passthrough(event, consumed: delegate?.handleQuitSelectedApp() ?? false)
+                }
+                if HotKeyMatcher.isMinimize(keyCode: keyCode, flags: flags) {
+                    return passthrough(event, consumed: delegate?.handleMinimizeSelectedWindow() ?? false)
+                }
+                if HotKeyMatcher.isFullScreen(keyCode: keyCode, flags: flags) {
+                    return passthrough(event, consumed: delegate?.handleToggleFullScreen() ?? false)
                 }
                 if let direction = HotKeyMatcher.arrowDirection(keyCode: keyCode) {
                     return passthrough(event, consumed: delegate?.handleArrow(direction) ?? false)

@@ -87,6 +87,25 @@ final class SwitcherController: EventTapControllerDelegate {
         return true
     }
 
+    func handleMinimizeSelectedWindow() -> Bool {
+        guard isSwitcherActive, let target = selectedWindow() else { return true }
+        // 最小化して一覧から取り除く（スイッチャーは開いたまま継続）。
+        if WindowActivator.minimize(target) {
+            refresh(with: model.windows.filter { $0.id != target.id })
+        }
+        return true
+    }
+
+    func handleToggleFullScreen() -> Bool {
+        guard isSwitcherActive, let target = selectedWindow() else { return true }
+        // フルスクリーン切替後はそのウィンドウへ移動して確定する（アニメーションを見せる）。
+        if WindowActivator.toggleFullScreen(target) {
+            WindowActivator.activate(target)
+            close()
+        }
+        return true
+    }
+
     // MARK: - マウス操作
 
     /// セルをクリックしたとき：そのウィンドウへ切り替えてスイッチャーを閉じる。
