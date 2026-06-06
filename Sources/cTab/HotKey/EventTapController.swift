@@ -3,11 +3,11 @@ import CoreGraphics
 
 /// EventTap が検知したキー操作を受け取るデリゲート。
 protocol EventTapControllerDelegate: AnyObject {
-    /// Command+Tab が押された。`reverse` は Shift 同時押し（逆順）。
+    /// トリガ（修飾キー+トリガキー）が押された。`reverse` は Shift 同時押し（逆順）。
     /// 戻り値 true でイベントを消費し、macOS 標準スイッチャーを抑制する。
     func handleSwitchKey(reverse: Bool) -> Bool
-    /// Command が離された（確定トリガ）。
-    func handleCommandReleased()
+    /// トリガ修飾キーが離された（ホールドモードの確定トリガ）。
+    func handleTriggerReleased()
     /// Escape が押された。戻り値 true で消費。
     func handleEscape() -> Bool
     /// 方向キーで選択を移動する。戻り値 true で消費。
@@ -100,27 +100,31 @@ final class EventTapController {
 
         let flags = event.flags
 
+        // トリガ設定（修飾キー・トリガキー）を毎回読む（設定変更が即時反映される）。
+        let modifier = AppSettings.triggerModifier.flag
+        let triggerKey = Int64(AppSettings.triggerKeyCode)
+
         switch type {
         case .keyDown:
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
 
-            if HotKeyMatcher.isSwitchTrigger(keyCode: keyCode, flags: flags) {
+            if HotKeyMatcher.isSwitchTrigger(keyCode: keyCode, flags: flags, triggerKeyCode: triggerKey, modifier: modifier) {
                 let consumed = delegate?.handleSwitchKey(reverse: HotKeyMatcher.isReverse(flags: flags)) ?? false
                 return passthrough(event, consumed: consumed)
             }
 
             // 以下はスイッチャー表示中のみ消費する（非表示時はすべて素通し）。
             if delegate?.isSwitcherActive == true {
-                if HotKeyMatcher.isCloseWindow(keyCode: keyCode, flags: flags) {
+                if HotKeyMatcher.isCloseWindow(keyCode: keyCode, flags: flags, modifier: modifier) {
                     return passthrough(event, consumed: delegate?.handleCloseSelectedWindow() ?? false)
                 }
-                if HotKeyMatcher.isQuitApp(keyCode: keyCode, flags: flags) {
+                if HotKeyMatcher.isQuitApp(keyCode: keyCode, flags: flags, modifier: modifier) {
                     return passthrough(event, consumed: delegate?.handleQuitSelectedApp() ?? false)
                 }
-                if HotKeyMatcher.isMinimize(keyCode: keyCode, flags: flags) {
+                if HotKeyMatcher.isMinimize(keyCode: keyCode, flags: flags, modifier: modifier) {
                     return passthrough(event, consumed: delegate?.handleMinimizeSelectedWindow() ?? false)
                 }
-                if HotKeyMatcher.isFullScreen(keyCode: keyCode, flags: flags) {
+                if HotKeyMatcher.isFullScreen(keyCode: keyCode, flags: flags, modifier: modifier) {
                     return passthrough(event, consumed: delegate?.handleToggleFullScreen() ?? false)
                 }
                 if let direction = HotKeyMatcher.arrowDirection(keyCode: keyCode) {
@@ -134,8 +138,8 @@ final class EventTapController {
             return Unmanaged.passUnretained(event)
 
         case .flagsChanged:
-            if HotKeyMatcher.isCommandReleased(flags: flags), delegate?.isSwitcherActive == true {
-                delegate?.handleCommandReleased()
+            if HotKeyMatcher.isModifierReleased(flags: flags, modifier: modifier), delegate?.isSwitcherActive == true {
+                delegate?.handleTriggerReleased()
             }
             return Unmanaged.passUnretained(event)
 

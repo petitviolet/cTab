@@ -15,6 +15,10 @@ final class SettingsModel {
     var showOnAllDisplays: Bool = AppSettings.showOnAllDisplays
     /// 別 Space のウィンドウを含めるか。
     var includeOtherSpaces: Bool = AppSettings.includeOtherSpaces
+    /// トリガの修飾キー。
+    var triggerModifier: TriggerModifier = AppSettings.triggerModifier
+    /// トリガキーの仮想キーコード。
+    var triggerKeyCode: Int = AppSettings.triggerKeyCode
     /// アクティブディスプレイ強調の ON/OFF。
     var highlightActiveDisplay: Bool = AppSettings.highlightActiveDisplay
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度。

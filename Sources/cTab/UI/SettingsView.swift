@@ -30,6 +30,37 @@ struct SettingsView: View {
                 .padding(6)
             }
 
+            GroupBox("ショートカット") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("修飾キー", selection: Binding(
+                        get: { model.triggerModifier },
+                        set: { value in
+                            model.triggerModifier = value
+                            AppSettings.triggerModifier = value
+                        }
+                    )) {
+                        ForEach(TriggerModifier.allCases) { mod in
+                            Text(mod.displayName).tag(mod)
+                        }
+                    }
+                    Picker("トリガキー", selection: Binding(
+                        get: { model.triggerKeyCode },
+                        set: { value in
+                            model.triggerKeyCode = value
+                            AppSettings.triggerKeyCode = value
+                        }
+                    )) {
+                        Text("Tab (⇥)").tag(Int(HotKeyMatcher.tabKeyCode))
+                        Text("Backtick (`)").tag(Int(HotKeyMatcher.graveKeyCode))
+                    }
+                    Text("修飾キーを押しながらトリガキーでスイッチャーを開きます（変更は即時反映）。Command 以外にすると標準の Command+Tab はそのまま使えます。")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(6)
+            }
+
             GroupBox("起動") {
                 Toggle("ログイン時に起動", isOn: Binding(
                     get: { model.launchAtLogin },
@@ -125,6 +156,7 @@ struct SettingsView: View {
 
             GroupBox("使い方") {
                 VStack(alignment: .leading, spacing: 4) {
+                    Text("以下の「Command」は設定した修飾キーに読み替えてください。")
                     Text("• Command を押しながら Tab：スイッチャーを開く / 次へ")
                     Text("• Command + Shift + Tab：前へ")
                     Text("• Command を押しながら 矢印キー（←→↑↓）：グリッド上を移動")

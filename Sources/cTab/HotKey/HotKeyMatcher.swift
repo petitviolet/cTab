@@ -1,14 +1,42 @@
 import CoreGraphics
 
-/// Command+Tab トリガの判定ロジック。CGEventFlags のみに依存し副作用を持たないため単体テスト可能。
+/// スイッチャーのトリガ／操作に使う修飾キー。
+enum TriggerModifier: String, CaseIterable, Identifiable {
+    case command, option, control
+
+    var id: String { rawValue }
+
+    var flag: CGEventFlags {
+        switch self {
+        case .command: return .maskCommand
+        case .option: return .maskAlternate
+        case .control: return .maskControl
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .command: return "Command (⌘)"
+        case .option: return "Option (⌥)"
+        case .control: return "Control (⌃)"
+        }
+    }
+}
+
+/// トリガ判定ロジック。CGEventFlags のみに依存し副作用を持たないため単体テスト可能。
 ///
-/// セキュリティ方針: ここでは「Command+Tab に合致するか」だけを判定する。
+/// セキュリティ方針: ここでは「設定されたトリガ／操作キーに合致するか」だけを判定する。
 /// 合致しないイベントのキーコード等は保持・記録しない（キーロガー化の回避）。
 enum HotKeyMatcher {
     /// Tab キーの仮想キーコード（kVK_Tab）。
     static let tabKeyCode: Int64 = 0x30
+    /// バッククォート `（kVK_ANSI_Grave）。トリガキーの選択肢。
+    static let graveKeyCode: Int64 = 0x32
     /// Escape キーの仮想キーコード（kVK_Escape）。
     static let escapeKeyCode: Int64 = 0x35
+    /// Return キーの仮想キーコード（kVK_Return / kVK_ANSI_KeypadEnter）。
+    static let returnKeyCode: Int64 = 0x24
+    static let keypadEnterKeyCode: Int64 = 0x4C
     /// W キーの仮想キーコード（kVK_ANSI_W）。
     static let wKeyCode: Int64 = 0x0D
     /// Q キーの仮想キーコード（kVK_ANSI_Q）。
@@ -23,9 +51,9 @@ enum HotKeyMatcher {
     static let downArrowKeyCode: Int64 = 0x7D
     static let upArrowKeyCode: Int64 = 0x7E
 
-    /// Command を押しながら Tab を叩いたか。
-    static func isSwitchTrigger(keyCode: Int64, flags: CGEventFlags) -> Bool {
-        keyCode == tabKeyCode && flags.contains(.maskCommand)
+    /// 設定された修飾キーを押しながらトリガキーを叩いたか。
+    static func isSwitchTrigger(keyCode: Int64, flags: CGEventFlags, triggerKeyCode: Int64, modifier: CGEventFlags) -> Bool {
+        keyCode == triggerKeyCode && flags.contains(modifier)
     }
 
     /// 逆方向（Shift 同時押し）か。
@@ -33,14 +61,19 @@ enum HotKeyMatcher {
         flags.contains(.maskShift)
     }
 
-    /// Command が離されたか（flagsChanged で確定トリガとして使う）。
-    static func isCommandReleased(flags: CGEventFlags) -> Bool {
-        !flags.contains(.maskCommand)
+    /// トリガ修飾キーが離されたか（flagsChanged で確定トリガとして使う）。
+    static func isModifierReleased(flags: CGEventFlags, modifier: CGEventFlags) -> Bool {
+        !flags.contains(modifier)
     }
 
     /// キャンセル（Escape）か。
     static func isCancel(keyCode: Int64) -> Bool {
         keyCode == escapeKeyCode
+    }
+
+    /// 確定（Return / Enter）か。
+    static func isConfirm(keyCode: Int64) -> Bool {
+        keyCode == returnKeyCode || keyCode == keypadEnterKeyCode
     }
 
     /// 矢印キーに対応する移動方向。矢印以外なら nil。
@@ -54,23 +87,23 @@ enum HotKeyMatcher {
         }
     }
 
-    /// Command+W（選択ウィンドウを閉じる）か。
-    static func isCloseWindow(keyCode: Int64, flags: CGEventFlags) -> Bool {
-        keyCode == wKeyCode && flags.contains(.maskCommand)
+    /// 修飾キー+W（選択ウィンドウを閉じる）か。
+    static func isCloseWindow(keyCode: Int64, flags: CGEventFlags, modifier: CGEventFlags) -> Bool {
+        keyCode == wKeyCode && flags.contains(modifier)
     }
 
-    /// Command+Q（選択アプリを終了する）か。
-    static func isQuitApp(keyCode: Int64, flags: CGEventFlags) -> Bool {
-        keyCode == qKeyCode && flags.contains(.maskCommand)
+    /// 修飾キー+Q（選択アプリを終了する）か。
+    static func isQuitApp(keyCode: Int64, flags: CGEventFlags, modifier: CGEventFlags) -> Bool {
+        keyCode == qKeyCode && flags.contains(modifier)
     }
 
-    /// Command+M（選択ウィンドウを最小化する）か。
-    static func isMinimize(keyCode: Int64, flags: CGEventFlags) -> Bool {
-        keyCode == mKeyCode && flags.contains(.maskCommand)
+    /// 修飾キー+M（選択ウィンドウを最小化する）か。
+    static func isMinimize(keyCode: Int64, flags: CGEventFlags, modifier: CGEventFlags) -> Bool {
+        keyCode == mKeyCode && flags.contains(modifier)
     }
 
-    /// Command+F（選択ウィンドウのフルスクリーンを切り替える）か。
-    static func isFullScreen(keyCode: Int64, flags: CGEventFlags) -> Bool {
-        keyCode == fKeyCode && flags.contains(.maskCommand)
+    /// 修飾キー+F（選択ウィンドウのフルスクリーンを切り替える）か。
+    static func isFullScreen(keyCode: Int64, flags: CGEventFlags, modifier: CGEventFlags) -> Bool {
+        keyCode == fKeyCode && flags.contains(modifier)
     }
 }

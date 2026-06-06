@@ -3,12 +3,22 @@ import CoreGraphics
 @testable import cTab
 
 final class HotKeyMatcherTests: XCTestCase {
-    func testSwitchTriggerRequiresCommandAndTab() {
-        XCTAssertTrue(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: .maskCommand))
-        // Command なしの Tab は対象外
-        XCTAssertFalse(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: []))
-        // Command 付きでも別キーは対象外
-        XCTAssertFalse(HotKeyMatcher.isSwitchTrigger(keyCode: 0x00, flags: .maskCommand))
+    private let cmd: CGEventFlags = .maskCommand
+
+    func testSwitchTriggerRequiresModifierAndTriggerKey() {
+        XCTAssertTrue(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: .maskCommand, triggerKeyCode: 0x30, modifier: cmd))
+        // 修飾なしの Tab は対象外
+        XCTAssertFalse(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: [], triggerKeyCode: 0x30, modifier: cmd))
+        // 修飾付きでも別キーは対象外
+        XCTAssertFalse(HotKeyMatcher.isSwitchTrigger(keyCode: 0x00, flags: .maskCommand, triggerKeyCode: 0x30, modifier: cmd))
+    }
+
+    func testSwitchTriggerWithCustomModifierAndKey() {
+        // Option + ` をトリガにした場合
+        let opt: CGEventFlags = .maskAlternate
+        XCTAssertTrue(HotKeyMatcher.isSwitchTrigger(keyCode: 0x32, flags: .maskAlternate, triggerKeyCode: 0x32, modifier: opt))
+        // Command 押下では発火しない
+        XCTAssertFalse(HotKeyMatcher.isSwitchTrigger(keyCode: 0x32, flags: .maskCommand, triggerKeyCode: 0x32, modifier: opt))
     }
 
     func testReverseDetectsShift() {
@@ -16,26 +26,32 @@ final class HotKeyMatcherTests: XCTestCase {
         XCTAssertFalse(HotKeyMatcher.isReverse(flags: [.maskCommand]))
     }
 
-    func testCommandReleased() {
-        XCTAssertTrue(HotKeyMatcher.isCommandReleased(flags: []))
-        XCTAssertFalse(HotKeyMatcher.isCommandReleased(flags: [.maskCommand]))
+    func testModifierReleased() {
+        XCTAssertTrue(HotKeyMatcher.isModifierReleased(flags: [], modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isModifierReleased(flags: [.maskCommand], modifier: cmd))
     }
 
     func testReverseSwitchTriggerIsStillSwitchTrigger() {
-        XCTAssertTrue(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: [.maskCommand, .maskShift]))
+        XCTAssertTrue(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: [.maskCommand, .maskShift], triggerKeyCode: 0x30, modifier: cmd))
     }
 
     func testSwitchTriggerToleratesExtraModifiers() {
-        XCTAssertTrue(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: [.maskCommand, .maskAlternate]))
+        XCTAssertTrue(HotKeyMatcher.isSwitchTrigger(keyCode: 0x30, flags: [.maskCommand, .maskAlternate], triggerKeyCode: 0x30, modifier: cmd))
     }
 
-    func testCommandReleasedWhenOnlyShiftRemains() {
-        XCTAssertTrue(HotKeyMatcher.isCommandReleased(flags: [.maskShift]))
+    func testModifierReleasedWhenOnlyShiftRemains() {
+        XCTAssertTrue(HotKeyMatcher.isModifierReleased(flags: [.maskShift], modifier: cmd))
     }
 
     func testIsCancelDetectsEscape() {
         XCTAssertTrue(HotKeyMatcher.isCancel(keyCode: 0x35))
         XCTAssertFalse(HotKeyMatcher.isCancel(keyCode: 0x30))
+    }
+
+    func testIsConfirmDetectsReturnAndEnter() {
+        XCTAssertTrue(HotKeyMatcher.isConfirm(keyCode: 0x24))
+        XCTAssertTrue(HotKeyMatcher.isConfirm(keyCode: 0x4C))
+        XCTAssertFalse(HotKeyMatcher.isConfirm(keyCode: 0x30))
     }
 
     func testArrowDirectionMapping() {
@@ -46,27 +62,33 @@ final class HotKeyMatcherTests: XCTestCase {
         XCTAssertNil(HotKeyMatcher.arrowDirection(keyCode: 0x30))
     }
 
-    func testCloseWindowRequiresCommandAndW() {
-        XCTAssertTrue(HotKeyMatcher.isCloseWindow(keyCode: 0x0D, flags: .maskCommand))
-        XCTAssertFalse(HotKeyMatcher.isCloseWindow(keyCode: 0x0D, flags: []))
-        XCTAssertFalse(HotKeyMatcher.isCloseWindow(keyCode: 0x0C, flags: .maskCommand))
+    func testCloseWindowRequiresModifierAndW() {
+        XCTAssertTrue(HotKeyMatcher.isCloseWindow(keyCode: 0x0D, flags: .maskCommand, modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isCloseWindow(keyCode: 0x0D, flags: [], modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isCloseWindow(keyCode: 0x0C, flags: .maskCommand, modifier: cmd))
     }
 
-    func testQuitAppRequiresCommandAndQ() {
-        XCTAssertTrue(HotKeyMatcher.isQuitApp(keyCode: 0x0C, flags: .maskCommand))
-        XCTAssertFalse(HotKeyMatcher.isQuitApp(keyCode: 0x0C, flags: []))
-        XCTAssertFalse(HotKeyMatcher.isQuitApp(keyCode: 0x0D, flags: .maskCommand))
+    func testQuitAppRequiresModifierAndQ() {
+        XCTAssertTrue(HotKeyMatcher.isQuitApp(keyCode: 0x0C, flags: .maskCommand, modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isQuitApp(keyCode: 0x0C, flags: [], modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isQuitApp(keyCode: 0x0D, flags: .maskCommand, modifier: cmd))
     }
 
-    func testMinimizeRequiresCommandAndM() {
-        XCTAssertTrue(HotKeyMatcher.isMinimize(keyCode: 0x2E, flags: .maskCommand))
-        XCTAssertFalse(HotKeyMatcher.isMinimize(keyCode: 0x2E, flags: []))
-        XCTAssertFalse(HotKeyMatcher.isMinimize(keyCode: 0x0D, flags: .maskCommand))
+    func testMinimizeRequiresModifierAndM() {
+        XCTAssertTrue(HotKeyMatcher.isMinimize(keyCode: 0x2E, flags: .maskCommand, modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isMinimize(keyCode: 0x2E, flags: [], modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isMinimize(keyCode: 0x0D, flags: .maskCommand, modifier: cmd))
     }
 
-    func testFullScreenRequiresCommandAndF() {
-        XCTAssertTrue(HotKeyMatcher.isFullScreen(keyCode: 0x03, flags: .maskCommand))
-        XCTAssertFalse(HotKeyMatcher.isFullScreen(keyCode: 0x03, flags: []))
-        XCTAssertFalse(HotKeyMatcher.isFullScreen(keyCode: 0x2E, flags: .maskCommand))
+    func testFullScreenRequiresModifierAndF() {
+        XCTAssertTrue(HotKeyMatcher.isFullScreen(keyCode: 0x03, flags: .maskCommand, modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isFullScreen(keyCode: 0x03, flags: [], modifier: cmd))
+        XCTAssertFalse(HotKeyMatcher.isFullScreen(keyCode: 0x2E, flags: .maskCommand, modifier: cmd))
+    }
+
+    func testTriggerModifierFlags() {
+        XCTAssertEqual(TriggerModifier.command.flag, .maskCommand)
+        XCTAssertEqual(TriggerModifier.option.flag, .maskAlternate)
+        XCTAssertEqual(TriggerModifier.control.flag, .maskControl)
     }
 }

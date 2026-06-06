@@ -11,6 +11,8 @@ enum AppSettings {
     private static let highlightActiveDisplayKey = "highlightActiveDisplay"
     private static let inactiveBackgroundOpacityKey = "inactiveBackgroundOpacity"
     private static let includeOtherSpacesKey = "includeOtherSpaces"
+    private static let triggerModifierKey = "triggerModifier"
+    private static let triggerKeyCodeKey = "triggerKeyCode"
 
     static let defaultSizeScale: CGFloat = 1.0
     static let minSizeScale: CGFloat = 0.5
@@ -45,6 +47,18 @@ enum AppSettings {
     static var includeOtherSpaces: Bool {
         get { (UserDefaults.standard.object(forKey: includeOtherSpacesKey) as? Bool) ?? true }
         set { UserDefaults.standard.set(newValue, forKey: includeOtherSpacesKey) }
+    }
+
+    /// スイッチャーのトリガに使う修飾キー（既定 Command）。
+    static var triggerModifier: TriggerModifier {
+        get { TriggerModifier(rawValue: UserDefaults.standard.string(forKey: triggerModifierKey) ?? "") ?? .command }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: triggerModifierKey) }
+    }
+
+    /// スイッチャーのトリガに使うキーの仮想キーコード（既定 Tab=0x30、ほかに ` =0x32）。
+    static var triggerKeyCode: Int {
+        get { (UserDefaults.standard.object(forKey: triggerKeyCodeKey) as? Int) ?? Int(HotKeyMatcher.tabKeyCode) }
+        set { UserDefaults.standard.set(newValue, forKey: triggerKeyCodeKey) }
     }
 
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（高いほど黒い）。

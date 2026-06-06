@@ -47,7 +47,7 @@ final class SwitcherController: EventTapControllerDelegate {
         return true
     }
 
-    func handleCommandReleased() {
+    func handleTriggerReleased() {
         guard isSwitcherActive else { return }
         commit()
     }
