@@ -15,8 +15,8 @@ final class SettingsModel {
     var showOnAllDisplays: Bool = AppSettings.showOnAllDisplays
     /// アクティブディスプレイ強調の ON/OFF。
     var highlightActiveDisplay: Bool = AppSettings.highlightActiveDisplay
-    /// アクティブ画面にないウィンドウの不透明度。
-    var inactiveDisplayOpacity: CGFloat = AppSettings.inactiveDisplayOpacity
+    /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度。
+    var inactiveBackgroundOpacity: CGFloat = AppSettings.inactiveBackgroundOpacity
 
     func refresh() {
         accessibilityGranted = Permissions.hasAccessibility()

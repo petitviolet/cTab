@@ -61,14 +61,15 @@ struct SwitcherView: View {
             repeating: GridItem(.fixed(layout.cellWidth), spacing: spacing),
             count: max(layout.columns, 1)
         )
-        let inactiveOpacity = AppSettings.highlightActiveDisplay ? AppSettings.inactiveDisplayOpacity : 1.0
+        // 強調 OFF なら黒背景なし（0）、ON なら設定の黒さ（基準係数込み）を使う。
+        let inactiveBackground = AppSettings.highlightActiveDisplay ? AppSettings.effectiveInactiveBackgroundOpacity : 0
         LazyVGrid(columns: gridColumns, spacing: spacing) {
             ForEach(Array(model.windows.enumerated()), id: \.element.id) { index, window in
                 WindowCell(
                     window: window,
                     isSelected: index == model.selectedIndex,
                     isOnActiveDisplay: isOnActiveDisplay(window),
-                    inactiveDisplayOpacity: inactiveOpacity,
+                    inactiveBackgroundOpacity: inactiveBackground,
                     width: layout.cellWidth,
                     height: layout.cellHeight,
                     scale: layout.scale,
@@ -99,10 +100,10 @@ struct SwitcherView: View {
 struct WindowCell: View {
     let window: WindowInfo
     let isSelected: Bool
-    /// このウィンドウがアクティブ（マウスのある）ディスプレイにあるか。false なら減光する。
+    /// このウィンドウがアクティブ（マウスのある）ディスプレイにあるか。false なら背景を黒くする。
     let isOnActiveDisplay: Bool
-    /// 非アクティブディスプレイのウィンドウに適用する不透明度（1.0 = 減光なし）。
-    let inactiveDisplayOpacity: CGFloat
+    /// 非アクティブディスプレイのウィンドウへ敷く黒背景の不透明度（0 = 無し）。
+    let inactiveBackgroundOpacity: CGFloat
     let width: CGFloat
     let height: CGFloat
     let scale: CGFloat
@@ -110,12 +111,11 @@ struct WindowCell: View {
     let onClose: () -> Void
 
     @State private var isHovering = false
+    @Environment(\.colorScheme) private var colorScheme
 
-    /// 最小化と「非アクティブディスプレイ」の両方を反映したセルの不透明度。
-    private var cellOpacity: Double {
-        let minimizedFactor = window.isMinimized ? 0.55 : 1.0
-        let displayFactor = isOnActiveDisplay ? 1.0 : Double(inactiveDisplayOpacity)
-        return minimizedFactor * displayFactor
+    /// 非アクティブディスプレイのウィンドウに敷く黒背景の不透明度（アクティブなら 0）。
+    private var backgroundOpacity: Double {
+        isOnActiveDisplay ? 0 : Double(inactiveBackgroundOpacity)
     }
 
     private var thumbnailHeight: CGFloat {
@@ -180,7 +180,13 @@ struct WindowCell: View {
             }
         }
         .frame(width: width, height: height)
-        .opacity(cellOpacity)
+        .background(
+            RoundedRectangle(cornerRadius: SwitcherLayout.thumbnailCornerRadius, style: .continuous)
+                .fill(Color.black.opacity(backgroundOpacity))
+        )
+        .opacity(window.isMinimized ? 0.55 : 1)
+        // 黒背景のセルは文字が読めるよう配色を dark 扱いにする（primary/secondary が明色になる）。
+        .environment(\.colorScheme, isOnActiveDisplay ? colorScheme : .dark)
         .contentShape(Rectangle())
         .onTapGesture { onSelect() }
         .onHover { hovering in isHovering = hovering }

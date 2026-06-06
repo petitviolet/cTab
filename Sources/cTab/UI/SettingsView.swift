@@ -89,26 +89,26 @@ struct SettingsView: View {
                         }
                     ))
                     HStack {
-                        Text("他画面のウィンドウの濃さ")
+                        Text("他画面のウィンドウの背景の黒さ")
                         Spacer()
-                        Text("\(Int((model.inactiveDisplayOpacity * 100).rounded()))%")
+                        Text("\(Int((model.inactiveBackgroundOpacity * 100).rounded()))%")
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
                     }
                     Slider(
                         value: Binding(
-                            get: { Double(model.inactiveDisplayOpacity) },
+                            get: { Double(model.inactiveBackgroundOpacity) },
                             set: { newValue in
                                 let opacity = CGFloat(newValue)
-                                model.inactiveDisplayOpacity = opacity
-                                AppSettings.inactiveDisplayOpacity = opacity
+                                model.inactiveBackgroundOpacity = opacity
+                                AppSettings.inactiveBackgroundOpacity = opacity
                             }
                         ),
-                        in: Double(AppSettings.minInactiveDisplayOpacity)...Double(AppSettings.maxInactiveDisplayOpacity),
+                        in: Double(AppSettings.minInactiveBackgroundOpacity)...Double(AppSettings.maxInactiveBackgroundOpacity),
                         step: 0.05
                     )
                     .disabled(!model.highlightActiveDisplay)
-                    Text("複数ディスプレイ時、マウスのある画面にないウィンドウの濃さ（低いほど薄い）。")
+                    Text("複数ディスプレイ時、マウスのある画面にないウィンドウに敷く黒背景の濃さ（高いほど黒い）。")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }

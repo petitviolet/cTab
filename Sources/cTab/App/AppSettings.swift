@@ -9,15 +9,24 @@ enum AppSettings {
     private static let sizeScaleKey = "sizeScale"
     private static let showOnAllDisplaysKey = "showOnAllDisplays"
     private static let highlightActiveDisplayKey = "highlightActiveDisplay"
-    private static let inactiveDisplayOpacityKey = "inactiveDisplayOpacity"
+    private static let inactiveBackgroundOpacityKey = "inactiveBackgroundOpacity"
 
     static let defaultSizeScale: CGFloat = 1.0
     static let minSizeScale: CGFloat = 0.5
     static let maxSizeScale: CGFloat = 1.5
 
-    static let defaultInactiveDisplayOpacity: CGFloat = 0.7
-    static let minInactiveDisplayOpacity: CGFloat = 0.3
-    static let maxInactiveDisplayOpacity: CGFloat = 1.0
+    /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（1.0 = 設定上の最大）。
+    static let defaultInactiveBackgroundOpacity: CGFloat = 1.0
+    static let minInactiveBackgroundOpacity: CGFloat = 0.3
+    static let maxInactiveBackgroundOpacity: CGFloat = 1.0
+    /// 黒さの基準係数。以前の 100% が濃すぎたため 0.5 に調整（以前の 50% を新しい 100% に）。
+    /// 設定値（inactiveBackgroundOpacity）にこれを掛けた値を実際の黒背景の不透明度として使う。
+    static let inactiveBackgroundFactor: CGFloat = 0.5
+
+    /// 実際に黒背景へ適用する不透明度（設定値 × 基準係数）。
+    static var effectiveInactiveBackgroundOpacity: CGFloat {
+        inactiveBackgroundOpacity * inactiveBackgroundFactor
+    }
 
     /// スイッチャーを全ディスプレイに同時表示するか（既定 false = 最前面ウィンドウのある画面のみ）。
     static var showOnAllDisplays: Bool {
@@ -31,19 +40,19 @@ enum AppSettings {
         set { UserDefaults.standard.set(newValue, forKey: highlightActiveDisplayKey) }
     }
 
-    /// アクティブ画面にないウィンドウの不透明度（低いほど薄い）。
-    static var inactiveDisplayOpacity: CGFloat {
+    /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（高いほど黒い）。
+    static var inactiveBackgroundOpacity: CGFloat {
         get {
-            guard let value = UserDefaults.standard.object(forKey: inactiveDisplayOpacityKey) as? Double else {
-                return defaultInactiveDisplayOpacity
+            guard let value = UserDefaults.standard.object(forKey: inactiveBackgroundOpacityKey) as? Double else {
+                return defaultInactiveBackgroundOpacity
             }
-            return clampInactiveDisplayOpacity(CGFloat(value))
+            return clampInactiveBackgroundOpacity(CGFloat(value))
         }
-        set { UserDefaults.standard.set(Double(clampInactiveDisplayOpacity(newValue)), forKey: inactiveDisplayOpacityKey) }
+        set { UserDefaults.standard.set(Double(clampInactiveBackgroundOpacity(newValue)), forKey: inactiveBackgroundOpacityKey) }
     }
 
-    static func clampInactiveDisplayOpacity(_ value: CGFloat) -> CGFloat {
-        min(max(value, minInactiveDisplayOpacity), maxInactiveDisplayOpacity)
+    static func clampInactiveBackgroundOpacity(_ value: CGFloat) -> CGFloat {
+        min(max(value, minInactiveBackgroundOpacity), maxInactiveBackgroundOpacity)
     }
 
     /// スイッチャー表示サイズの倍率。ディスプレイに応じた自動スケールに掛ける。
