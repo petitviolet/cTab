@@ -21,6 +21,12 @@ final class SettingsModel {
     var triggerKeyCode: Int = AppSettings.triggerKeyCode
     /// 起動方式（ホールド/トグル）。
     var activationMode: ActivationMode = AppSettings.activationMode
+    /// 外観モード。
+    var appearance: AppearanceMode = AppearanceMode(rawValue: AppSettings.appearanceRaw) ?? .system
+    /// アクセントカラー。
+    var accentColor: AccentColorOption = AccentColorOption(rawValue: AppSettings.accentColorRaw) ?? .system
+    /// パネル背景の不透明度。
+    var panelOpacity: CGFloat = AppSettings.panelOpacity
     /// アクティブディスプレイ強調の ON/OFF。
     var highlightActiveDisplay: Bool = AppSettings.highlightActiveDisplay
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度。

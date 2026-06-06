@@ -31,6 +31,9 @@ enum AppSettings {
     private static let triggerModifierKey = "triggerModifier"
     private static let triggerKeyCodeKey = "triggerKeyCode"
     private static let activationModeKey = "activationMode"
+    private static let appearanceKey = "appearance"
+    private static let accentColorKey = "accentColor"
+    private static let panelOpacityKey = "panelOpacity"
 
     static let defaultSizeScale: CGFloat = 1.0
     static let minSizeScale: CGFloat = 0.5
@@ -83,6 +86,39 @@ enum AppSettings {
     static var activationMode: ActivationMode {
         get { ActivationMode(rawValue: UserDefaults.standard.string(forKey: activationModeKey) ?? "") ?? .hold }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: activationModeKey) }
+    }
+
+    // MARK: - テーマ／外観（enum は UI 層で解釈する。ここでは raw 値のみ保持）
+
+    static let defaultPanelOpacity: CGFloat = 1.0
+    static let minPanelOpacity: CGFloat = 0.5
+    static let maxPanelOpacity: CGFloat = 1.0
+
+    /// 外観モードの raw 値（既定 "system"）。
+    static var appearanceRaw: String {
+        get { UserDefaults.standard.string(forKey: appearanceKey) ?? "system" }
+        set { UserDefaults.standard.set(newValue, forKey: appearanceKey) }
+    }
+
+    /// アクセントカラーの raw 値（既定 "system"）。
+    static var accentColorRaw: String {
+        get { UserDefaults.standard.string(forKey: accentColorKey) ?? "system" }
+        set { UserDefaults.standard.set(newValue, forKey: accentColorKey) }
+    }
+
+    /// パネル背景の不透明度（低いほど透ける）。
+    static var panelOpacity: CGFloat {
+        get {
+            guard let value = UserDefaults.standard.object(forKey: panelOpacityKey) as? Double else {
+                return defaultPanelOpacity
+            }
+            return clampPanelOpacity(CGFloat(value))
+        }
+        set { UserDefaults.standard.set(Double(clampPanelOpacity(newValue)), forKey: panelOpacityKey) }
+    }
+
+    static func clampPanelOpacity(_ value: CGFloat) -> CGFloat {
+        min(max(value, minPanelOpacity), maxPanelOpacity)
     }
 
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（高いほど黒い）。

@@ -165,6 +165,54 @@ struct SettingsView: View {
                 .padding(6)
             }
 
+            GroupBox("テーマ") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("外観", selection: Binding(
+                        get: { model.appearance },
+                        set: { value in
+                            model.appearance = value
+                            AppSettings.appearanceRaw = value.rawValue
+                        }
+                    )) {
+                        ForEach(AppearanceMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    Picker("アクセントカラー", selection: Binding(
+                        get: { model.accentColor },
+                        set: { value in
+                            model.accentColor = value
+                            AppSettings.accentColorRaw = value.rawValue
+                        }
+                    )) {
+                        ForEach(AccentColorOption.allCases) { option in
+                            Text(option.displayName).tag(option)
+                        }
+                    }
+                    HStack {
+                        Text("背景の不透明度")
+                        Spacer()
+                        Text("\(Int((model.panelOpacity * 100).rounded()))%")
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                    Slider(
+                        value: Binding(
+                            get: { Double(model.panelOpacity) },
+                            set: { newValue in
+                                let opacity = CGFloat(newValue)
+                                model.panelOpacity = opacity
+                                AppSettings.panelOpacity = opacity
+                            }
+                        ),
+                        in: Double(AppSettings.minPanelOpacity)...Double(AppSettings.maxPanelOpacity),
+                        step: 0.05
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(6)
+            }
+
             GroupBox("使い方") {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("以下の「Command」は設定した修飾キーに読み替えてください。")

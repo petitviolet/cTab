@@ -38,6 +38,60 @@ enum SwitcherLayout {
     }
 }
 
+/// スイッチャーの外観（ライト/ダーク）。
+enum AppearanceMode: String, CaseIterable, Identifiable {
+    case system, light, dark
+
+    var id: String { rawValue }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .system: return "システムに合わせる"
+        case .light: return "ライト"
+        case .dark: return "ダーク"
+        }
+    }
+}
+
+/// 選択枠のアクセントカラー。
+enum AccentColorOption: String, CaseIterable, Identifiable {
+    case system, blue, purple, pink, green, orange, red
+
+    var id: String { rawValue }
+
+    var color: Color {
+        switch self {
+        case .system: return .accentColor
+        case .blue: return .blue
+        case .purple: return .purple
+        case .pink: return .pink
+        case .green: return .green
+        case .orange: return .orange
+        case .red: return .red
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .system: return "システム"
+        case .blue: return "ブルー"
+        case .purple: return "パープル"
+        case .pink: return "ピンク"
+        case .green: return "グリーン"
+        case .orange: return "オレンジ"
+        case .red: return "レッド"
+        }
+    }
+}
+
 /// 1 ディスプレイ分の確定レイアウト（配置先・グリッド寸法・スケール）。
 struct ScreenLayout {
     let screenFrame: CGRect
@@ -65,6 +119,7 @@ struct SwitcherView: View {
         )
         // 強調 OFF なら黒背景なし（0）、ON なら設定の黒さ（基準係数込み）を使う。
         let inactiveBackground = AppSettings.highlightActiveDisplay ? AppSettings.effectiveInactiveBackgroundOpacity : 0
+        let accent = AccentColorOption(rawValue: AppSettings.accentColorRaw)?.color ?? Color.accentColor
         VStack(spacing: spacing) {
             if !model.searchQuery.isEmpty {
                 searchBar
@@ -76,6 +131,7 @@ struct SwitcherView: View {
                         isSelected: index == model.selectedIndex,
                         isOnActiveDisplay: isOnActiveDisplay(window),
                         inactiveBackgroundOpacity: inactiveBackground,
+                        accentColor: accent,
                         width: layout.cellWidth,
                         height: layout.cellHeight,
                         scale: layout.scale,
@@ -90,7 +146,9 @@ struct SwitcherView: View {
         .background(
             RoundedRectangle(cornerRadius: SwitcherLayout.panelCornerRadius, style: .continuous)
                 .fill(.ultraThinMaterial)
+                .opacity(AppSettings.panelOpacity)
         )
+        .preferredColorScheme((AppearanceMode(rawValue: AppSettings.appearanceRaw) ?? .system).colorScheme)
     }
 
     /// 検索クエリを表示するバー（クエリが空でないときのみ表示）。
@@ -125,6 +183,8 @@ struct WindowCell: View {
     let isOnActiveDisplay: Bool
     /// 非アクティブディスプレイのウィンドウへ敷く黒背景の不透明度（0 = 無し）。
     let inactiveBackgroundOpacity: CGFloat
+    /// 選択枠のアクセントカラー。
+    let accentColor: Color
     let width: CGFloat
     let height: CGFloat
     let scale: CGFloat
@@ -192,7 +252,7 @@ struct WindowCell: View {
             .clipShape(RoundedRectangle(cornerRadius: SwitcherLayout.thumbnailCornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: SwitcherLayout.thumbnailCornerRadius, style: .continuous)
-                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: SwitcherLayout.selectionLineWidth)
+                    .strokeBorder(isSelected ? accentColor : Color.clear, lineWidth: SwitcherLayout.selectionLineWidth)
             )
             .overlay(alignment: .topTrailing) {
                 if isHovering {
