@@ -51,6 +51,13 @@ struct SettingsView: View {
                             AppSettings.showOnAllDisplays = enabled
                         }
                     ))
+                    Toggle("別 Space のウィンドウも含める", isOn: Binding(
+                        get: { model.includeOtherSpaces },
+                        set: { enabled in
+                            model.includeOtherSpaces = enabled
+                            AppSettings.includeOtherSpaces = enabled
+                        }
+                    ))
                     Divider()
                     HStack {
                         Text("スイッチャーの大きさ")

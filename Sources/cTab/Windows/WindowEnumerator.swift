@@ -47,7 +47,7 @@ enum WindowEnumerator {
 
             for axWindow in axWindows {
                 AXUIElementSetMessagingTimeout(axWindow, messagingTimeout)
-                guard let info = makeWindowInfo(axWindow, pid: pid, appName: appName, icon: icon, boundsByID: onScreen.bounds) else { continue }
+                guard let info = makeWindowInfo(axWindow, pid: pid, appName: appName, icon: icon, onScreen: onScreen) else { continue }
                 result.append(info)
             }
         }
@@ -65,7 +65,7 @@ enum WindowEnumerator {
     }
 
     /// 1 ウィンドウ分の属性を読み、標準ウィンドウなら WindowInfo を作る。対象外なら nil。
-    private static func makeWindowInfo(_ window: AXUIElement, pid: pid_t, appName: String, icon: NSImage?, boundsByID: [CGWindowID: CGRect]) -> WindowInfo? {
+    private static func makeWindowInfo(_ window: AXUIElement, pid: pid_t, appName: String, icon: NSImage?, onScreen: (order: [CGWindowID: Int], bounds: [CGWindowID: CGRect])) -> WindowInfo? {
         let role: String?
         let subrole: String?
         let title: String
@@ -93,7 +93,9 @@ enum WindowEnumerator {
         guard _AXUIElementGetWindow(window, &windowID) == .success, windowID != 0 else { return nil }
 
         // CGWindowList の矩形から、このウィンドウが乗っているディスプレイを求める（不明なら .zero）。
-        let screenFrame = boundsByID[windowID].map { displayFrame(containing: $0) } ?? CGRect.zero
+        let screenFrame = onScreen.bounds[windowID].map { displayFrame(containing: $0) } ?? CGRect.zero
+        // 現在の Space の画面上にも無く、最小化でもないウィンドウは別 Space にあると推定する。
+        let onOtherSpace = onScreen.order[windowID] == nil && !minimized
 
         return WindowInfo(
             id: windowID,
@@ -103,6 +105,7 @@ enum WindowEnumerator {
             appIcon: icon,
             axElement: window,
             screenFrame: screenFrame,
+            isOnOtherSpace: onOtherSpace,
             isMinimized: minimized,
             thumbnail: nil
         )

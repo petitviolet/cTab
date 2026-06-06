@@ -14,6 +14,8 @@ struct WindowInfo: Identifiable {
     let axElement: AXUIElement
     /// このウィンドウが乗っているディスプレイの frame。不明（最小化など）は .zero。
     let screenFrame: CGRect
+    /// 現在の Space の画面上に存在せず、最小化でもない＝別 Space にあると推定されるか。
+    let isOnOtherSpace: Bool
     var isMinimized: Bool
     var thumbnail: CGImage?
 

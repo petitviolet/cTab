@@ -10,6 +10,7 @@ enum AppSettings {
     private static let showOnAllDisplaysKey = "showOnAllDisplays"
     private static let highlightActiveDisplayKey = "highlightActiveDisplay"
     private static let inactiveBackgroundOpacityKey = "inactiveBackgroundOpacity"
+    private static let includeOtherSpacesKey = "includeOtherSpaces"
 
     static let defaultSizeScale: CGFloat = 1.0
     static let minSizeScale: CGFloat = 0.5
@@ -38,6 +39,12 @@ enum AppSettings {
     static var highlightActiveDisplay: Bool {
         get { (UserDefaults.standard.object(forKey: highlightActiveDisplayKey) as? Bool) ?? true }
         set { UserDefaults.standard.set(newValue, forKey: highlightActiveDisplayKey) }
+    }
+
+    /// 別 Space にあるウィンドウも一覧に含めるか（既定 true）。
+    static var includeOtherSpaces: Bool {
+        get { (UserDefaults.standard.object(forKey: includeOtherSpacesKey) as? Bool) ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: includeOtherSpacesKey) }
     }
 
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（高いほど黒い）。

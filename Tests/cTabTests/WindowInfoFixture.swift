@@ -10,6 +10,7 @@ enum WindowInfoFixture {
         appName: String = "TestApp",
         title: String = "",
         screenFrame: CGRect = .zero,
+        isOnOtherSpace: Bool = false,
         isMinimized: Bool = false,
         thumbnail: CGImage? = nil
     ) -> WindowInfo {
@@ -21,6 +22,7 @@ enum WindowInfoFixture {
             appIcon: nil,
             axElement: AXUIElementCreateApplication(getpid()),
             screenFrame: screenFrame,
+            isOnOtherSpace: isOnOtherSpace,
             isMinimized: isMinimized,
             thumbnail: thumbnail
         )

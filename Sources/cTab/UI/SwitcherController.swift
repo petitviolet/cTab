@@ -108,6 +108,10 @@ final class SwitcherController: EventTapControllerDelegate {
 
     private func open(reverse: Bool) {
         var windows = WindowEnumerator.enumerate()
+        // 設定で OFF なら別 Space のウィンドウを除外する。
+        if !AppSettings.includeOtherSpaces {
+            windows = windows.filter { !$0.isOnOtherSpace }
+        }
         guard !windows.isEmpty else { return }
 
         // 現存ウィンドウだけキャッシュを残し、取得済みサムネイルを即時反映する。

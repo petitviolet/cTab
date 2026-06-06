@@ -13,6 +13,8 @@ final class SettingsModel {
     var sizeScale: CGFloat = AppSettings.sizeScale
     /// 全ディスプレイ同時表示の ON/OFF。
     var showOnAllDisplays: Bool = AppSettings.showOnAllDisplays
+    /// 別 Space のウィンドウを含めるか。
+    var includeOtherSpaces: Bool = AppSettings.includeOtherSpaces
     /// アクティブディスプレイ強調の ON/OFF。
     var highlightActiveDisplay: Bool = AppSettings.highlightActiveDisplay
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度。
