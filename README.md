@@ -2,6 +2,8 @@
 
 Command+Tab で、開いている全アプリケーションの**ウィンドウ単位**の切り替えを行う macOS アプリです。macOS 標準の Command+Tab（アプリ単位）を置き換え、 ウィンドウのサムネイル一覧から切り替えられます。
 
+詳細な仕様は [docs/specification_ja.md](docs/specification_ja.md)（English: [docs/specification_en.md](docs/specification_en.md)）を参照してください。
+
 ## 特徴
 
 - **ウィンドウ単位の切り替え** — アプリ単位ではなく、個々のウィンドウを一覧表示
