@@ -175,10 +175,10 @@ final class SwitcherController: EventTapControllerDelegate {
         present(filtered, selectedIndex: index)
     }
 
-    /// 母集合からウィンドウを取り除き、空になればスイッチャーを閉じる（close/quit/minimize 用）。
+    /// 母集合からウィンドウを取り除き、母集合が空になればスイッチャーを閉じる（close/quit/minimize 用）。
     private func removeFromMaster(where shouldRemove: (WindowInfo) -> Bool) {
         allWindows.removeAll(where: shouldRemove)
-        if filteredWindows().isEmpty && searchQuery.isEmpty {
+        if allWindows.isEmpty {
             close()
         } else {
             reapplySearch(resetSelection: false)

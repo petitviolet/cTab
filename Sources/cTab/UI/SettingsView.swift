@@ -64,7 +64,7 @@ struct SettingsView: View {
                             Text(mode.displayName).tag(mode)
                         }
                     }
-                    Text("修飾キーを押しながらトリガキーでスイッチャーを開きます（変更は即時反映）。Command 以外にすると標準の Command+Tab はそのまま使えます。トグルでは修飾キーを離しても開いたまま、Return で確定・Escape でキャンセルです。")
+                    Text("修飾キーを押しながらトリガキーでスイッチャーを開きます（変更は即時反映）。Command 以外にすると標準の Command+Tab はそのまま使えます。トグルでは修飾キーを離しても開いたまま、Return で確定・Escape でキャンセルです。トリガキーを ` にすると、検索で `（および ~）は入力できません。")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }

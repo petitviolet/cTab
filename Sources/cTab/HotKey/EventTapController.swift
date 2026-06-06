@@ -99,10 +99,16 @@ final class EventTapController {
 
     /// キーイベントから表示可能な文字列を取り出す。制御文字（Tab/Return/Escape 等）は nil。
     /// セキュリティ方針: スイッチャー表示中の検索にのみ使い、保持・記録はしない。
+    ///
+    /// ホールドモードでは修飾キー（Command 等）を押したまま文字入力するため、
+    /// 修飾フラグが付いたままだと keyboardGetUnicodeString が文字を返さないことがある。
+    /// 元イベントを変更しないよう複製し、修飾フラグを落としてから文字へ変換する。
     private func printableString(from event: CGEvent) -> String? {
+        guard let copy = event.copy() else { return nil }
+        copy.flags = []
         var length = 0
         var chars = [UniChar](repeating: 0, count: 4)
-        event.keyboardGetUnicodeString(maxStringLength: 4, actualStringLength: &length, unicodeString: &chars)
+        copy.keyboardGetUnicodeString(maxStringLength: 4, actualStringLength: &length, unicodeString: &chars)
         guard length > 0 else { return nil }
         let text = String(utf16CodeUnits: chars, count: length)
         guard text.unicodeScalars.allSatisfy({ $0.value >= 0x20 && $0.value != 0x7F }) else { return nil }

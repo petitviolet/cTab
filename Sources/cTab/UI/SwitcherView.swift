@@ -19,6 +19,8 @@ enum SwitcherLayout {
     static func headerIconSize(_ scale: CGFloat) -> CGFloat { baseHeaderIconSize * scale }
     static func appNameFontSize(_ scale: CGFloat) -> CGFloat { baseAppNameFontSize * scale }
     static func searchBarHeight(_ scale: CGFloat) -> CGFloat { baseSearchBarHeight * scale }
+    /// 検索バー表示時に確保するパネルの最小幅。
+    static func searchBarMinWidth(_ scale: CGFloat) -> CGFloat { baseMaxCellWidth * scale }
 
     // スケールしない固定値。
     static let panelCornerRadius: CGFloat = 16
@@ -266,8 +268,8 @@ struct WindowCell: View {
                 .fill(Color.black.opacity(backgroundOpacity))
         )
         .opacity(window.isMinimized ? 0.55 : 1)
-        // 黒背景のセルは文字が読めるよう配色を dark 扱いにする（primary/secondary が明色になる）。
-        .environment(\.colorScheme, isOnActiveDisplay ? colorScheme : .dark)
+        // 黒背景が実際に乗るセルのみ、文字が読めるよう配色を dark 扱いにする（primary/secondary が明色になる）。
+        .environment(\.colorScheme, backgroundOpacity > 0 ? .dark : colorScheme)
         .contentShape(Rectangle())
         .onTapGesture { onSelect() }
         .onHover { hovering in isHovering = hovering }

@@ -94,7 +94,7 @@ final class SwitcherPanel {
         if !model.searchQuery.isEmpty {
             let spacing = SwitcherLayout.gridSpacing(layout.scale)
             size.height += SwitcherLayout.searchBarHeight(layout.scale) + spacing
-            size.width = max(size.width, 260 * layout.scale)
+            size.width = max(size.width, SwitcherLayout.searchBarMinWidth(layout.scale))
         }
         return size
     }
