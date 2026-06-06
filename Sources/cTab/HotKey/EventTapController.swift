@@ -12,6 +12,10 @@ protocol EventTapControllerDelegate: AnyObject {
     func handleEscape() -> Bool
     /// Return / Enter が押された（トグルモードの確定）。戻り値 true で消費。
     func handleConfirm() -> Bool
+    /// インクリメンタル検索に文字が入力された。戻り値 true で消費。
+    func handleSearchInput(_ text: String) -> Bool
+    /// 検索クエリの末尾を削除する（Backspace）。戻り値 true で消費。
+    func handleSearchBackspace() -> Bool
     /// 方向キーで選択を移動する。戻り値 true で消費。
     func handleArrow(_ direction: Direction) -> Bool
     /// 選択中ウィンドウを閉じる（Command+W）。戻り値 true で消費。
@@ -93,6 +97,18 @@ final class EventTapController {
         consumed ? nil : Unmanaged.passUnretained(event)
     }
 
+    /// キーイベントから表示可能な文字列を取り出す。制御文字（Tab/Return/Escape 等）は nil。
+    /// セキュリティ方針: スイッチャー表示中の検索にのみ使い、保持・記録はしない。
+    private func printableString(from event: CGEvent) -> String? {
+        var length = 0
+        var chars = [UniChar](repeating: 0, count: 4)
+        event.keyboardGetUnicodeString(maxStringLength: 4, actualStringLength: &length, unicodeString: &chars)
+        guard length > 0 else { return nil }
+        let text = String(utf16CodeUnits: chars, count: length)
+        guard text.unicodeScalars.allSatisfy({ $0.value >= 0x20 && $0.value != 0x7F }) else { return nil }
+        return text
+    }
+
     private func process(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // タップ無効化からの自動復帰。コールバックが重いと OS にタイムアウト無効化されるため必須。
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
@@ -141,6 +157,14 @@ final class EventTapController {
                 // トグルモードで修飾キーを離した後、トリガキー単独でも選択を進める（Shift で逆順）。
                 if keyCode == triggerKey {
                     return passthrough(event, consumed: delegate?.handleSwitchKey(reverse: HotKeyMatcher.isReverse(flags: flags)) ?? false)
+                }
+                // Backspace は検索クエリを 1 文字削除する。
+                if keyCode == HotKeyMatcher.deleteKeyCode {
+                    return passthrough(event, consumed: delegate?.handleSearchBackspace() ?? false)
+                }
+                // 表示可能な文字はインクリメンタル検索へ送る（スイッチャー表示中のみ・ローカル処理のみ）。
+                if let text = printableString(from: event) {
+                    return passthrough(event, consumed: delegate?.handleSearchInput(text) ?? false)
                 }
             }
 

@@ -175,6 +175,7 @@ struct SettingsView: View {
                     Text("• Command + Q：選択中のアプリを終了")
                     Text("• Command + M：選択中のウィンドウを最小化")
                     Text("• Command + F：選択中のウィンドウをフルスクリーン切替")
+                    Text("• 文字入力：アプリ名 / ウィンドウ名で絞り込み（Backspace で削除）")
                     Text("• Command を離す：切り替え確定（ホールド時）/ Return：確定（トグル時）/ Escape：キャンセル")
                 }
                 .font(.system(size: 12))

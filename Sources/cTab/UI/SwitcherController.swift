@@ -17,6 +17,10 @@ final class SwitcherController: EventTapControllerDelegate {
     private var currentColumns = 1
     /// 表示中だけ有効なマウス移動モニタ（アクティブ画面の追従用）。
     private var mouseMonitors: [Any] = []
+    /// 検索でフィルタする前の全ウィンドウ（このセッションの母集合）。
+    private var allWindows: [WindowInfo] = []
+    /// 現在の検索クエリ。
+    private var searchQuery = ""
 
     private(set) var isSwitcherActive = false
 
@@ -83,7 +87,7 @@ final class SwitcherController: EventTapControllerDelegate {
     func handleCloseSelectedWindow() -> Bool {
         guard isSwitcherActive, let target = selectedWindow() else { return true }
         if WindowActivator.close(target) {
-            refresh(with: model.windows.filter { $0.id != target.id })
+            removeFromMaster { $0.id == target.id }
         }
         return true
     }
@@ -91,7 +95,7 @@ final class SwitcherController: EventTapControllerDelegate {
     func handleQuitSelectedApp() -> Bool {
         guard isSwitcherActive, let target = selectedWindow() else { return true }
         if WindowActivator.quit(target) {
-            refresh(with: model.windows.filter { $0.pid != target.pid })
+            removeFromMaster { $0.pid == target.pid }
         }
         return true
     }
@@ -100,7 +104,7 @@ final class SwitcherController: EventTapControllerDelegate {
         guard isSwitcherActive, let target = selectedWindow() else { return true }
         // 最小化して一覧から取り除く（スイッチャーは開いたまま継続）。
         if WindowActivator.minimize(target) {
-            refresh(with: model.windows.filter { $0.id != target.id })
+            removeFromMaster { $0.id == target.id }
         }
         return true
     }
@@ -128,7 +132,56 @@ final class SwitcherController: EventTapControllerDelegate {
     private func closeWithMouse(_ window: WindowInfo) {
         guard isSwitcherActive else { return }
         if WindowActivator.close(window) {
-            refresh(with: model.windows.filter { $0.id != window.id })
+            removeFromMaster { $0.id == window.id }
+        }
+    }
+
+    // MARK: - 検索
+
+    func handleSearchInput(_ text: String) -> Bool {
+        guard isSwitcherActive else { return false }
+        searchQuery += text
+        model.searchQuery = searchQuery
+        reapplySearch(resetSelection: true)
+        return true
+    }
+
+    func handleSearchBackspace() -> Bool {
+        guard isSwitcherActive else { return false }
+        // クエリがあれば 1 文字削除して消費。空でも表示中は Backspace を握りつぶす。
+        if !searchQuery.isEmpty {
+            searchQuery.removeLast()
+            model.searchQuery = searchQuery
+            reapplySearch(resetSelection: true)
+        }
+        return true
+    }
+
+    /// 現在のクエリで母集合をフィルタし、サムネイルをキャッシュから補って返す。
+    private func filteredWindows() -> [WindowInfo] {
+        let query = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        var list = query.isEmpty
+            ? allWindows
+            : allWindows.filter { $0.appName.lowercased().contains(query) || $0.title.lowercased().contains(query) }
+        for index in list.indices {
+            list[index].thumbnail = thumbnailCache.image(for: list[index].id)
+        }
+        return list
+    }
+
+    private func reapplySearch(resetSelection: Bool) {
+        let filtered = filteredWindows()
+        let index = resetSelection ? 0 : Navigation.clamp(model.selectedIndex, count: filtered.count)
+        present(filtered, selectedIndex: index)
+    }
+
+    /// 母集合からウィンドウを取り除き、空になればスイッチャーを閉じる（close/quit/minimize 用）。
+    private func removeFromMaster(where shouldRemove: (WindowInfo) -> Bool) {
+        allWindows.removeAll(where: shouldRemove)
+        if filteredWindows().isEmpty && searchQuery.isEmpty {
+            close()
+        } else {
+            reapplySearch(resetSelection: false)
         }
     }
 
@@ -147,6 +200,11 @@ final class SwitcherController: EventTapControllerDelegate {
         for index in windows.indices {
             windows[index].thumbnail = thumbnailCache.image(for: windows[index].id)
         }
+
+        // 検索の母集合を更新し、クエリは初期化する。
+        allWindows = windows
+        searchQuery = ""
+        model.searchQuery = ""
 
         let initialIndex = reverse
             ? Navigation.previousIndex(current: 0, count: windows.count)
@@ -255,15 +313,6 @@ final class SwitcherController: EventTapControllerDelegate {
         return NSScreen.screens.first { NSMouseInRect(point, $0.frame, false) }
     }
 
-    /// close/quit でウィンドウが減った後の再表示。残りが空ならスイッチャーを閉じる。
-    private func refresh(with windows: [WindowInfo]) {
-        if windows.isEmpty {
-            close()
-        } else {
-            present(windows, selectedIndex: model.selectedIndex)
-        }
-    }
-
     private func selectedWindow() -> WindowInfo? {
         let index = Navigation.clamp(model.selectedIndex, count: model.windows.count)
         return model.windows.indices.contains(index) ? model.windows[index] : nil
@@ -318,6 +367,10 @@ final class SwitcherController: EventTapControllerDelegate {
         isSwitcherActive = false
         panel.hide()
         stopMouseTracking()
+        // 検索状態をリセットする（次回開いたときは全件・クエリ空から）。
+        searchQuery = ""
+        model.searchQuery = ""
+        allWindows = []
         // 進行中のサムネイル取得はキャンセルしない。完了させてキャッシュを温めておくことで、
         // 素早く開閉してもキャッシュが蓄積される。古いタスクは次回 open の startThumbnailCapture が置き換える。
     }

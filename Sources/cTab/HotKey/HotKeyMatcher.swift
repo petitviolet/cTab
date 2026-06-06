@@ -37,6 +37,8 @@ enum HotKeyMatcher {
     /// Return キーの仮想キーコード（kVK_Return / kVK_ANSI_KeypadEnter）。
     static let returnKeyCode: Int64 = 0x24
     static let keypadEnterKeyCode: Int64 = 0x4C
+    /// Delete（Backspace）キーの仮想キーコード（kVK_Delete）。
+    static let deleteKeyCode: Int64 = 0x33
     /// W キーの仮想キーコード（kVK_ANSI_W）。
     static let wKeyCode: Int64 = 0x0D
     /// Q キーの仮想キーコード（kVK_ANSI_Q）。

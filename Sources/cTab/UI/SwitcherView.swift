@@ -8,6 +8,7 @@ enum SwitcherLayout {
     private static let baseMaxCellWidth: CGFloat = 260
     private static let baseHeaderIconSize: CGFloat = 26
     private static let baseAppNameFontSize: CGFloat = 14
+    private static let baseSearchBarHeight: CGFloat = 30
 
     /// 全体の基準サイズ係数（100% 表示の基準を調整）。スケール計算側で掛ける。
     static let baseSizeFactor: CGFloat = 0.75
@@ -17,6 +18,7 @@ enum SwitcherLayout {
     static func maxCellWidth(_ scale: CGFloat) -> CGFloat { baseMaxCellWidth * scale }
     static func headerIconSize(_ scale: CGFloat) -> CGFloat { baseHeaderIconSize * scale }
     static func appNameFontSize(_ scale: CGFloat) -> CGFloat { baseAppNameFontSize * scale }
+    static func searchBarHeight(_ scale: CGFloat) -> CGFloat { baseSearchBarHeight * scale }
 
     // スケールしない固定値。
     static let panelCornerRadius: CGFloat = 16
@@ -63,19 +65,24 @@ struct SwitcherView: View {
         )
         // 強調 OFF なら黒背景なし（0）、ON なら設定の黒さ（基準係数込み）を使う。
         let inactiveBackground = AppSettings.highlightActiveDisplay ? AppSettings.effectiveInactiveBackgroundOpacity : 0
-        LazyVGrid(columns: gridColumns, spacing: spacing) {
-            ForEach(Array(model.windows.enumerated()), id: \.element.id) { index, window in
-                WindowCell(
-                    window: window,
-                    isSelected: index == model.selectedIndex,
-                    isOnActiveDisplay: isOnActiveDisplay(window),
-                    inactiveBackgroundOpacity: inactiveBackground,
-                    width: layout.cellWidth,
-                    height: layout.cellHeight,
-                    scale: layout.scale,
-                    onSelect: { onSelect(window) },
-                    onClose: { onClose(window) }
-                )
+        VStack(spacing: spacing) {
+            if !model.searchQuery.isEmpty {
+                searchBar
+            }
+            LazyVGrid(columns: gridColumns, spacing: spacing) {
+                ForEach(Array(model.windows.enumerated()), id: \.element.id) { index, window in
+                    WindowCell(
+                        window: window,
+                        isSelected: index == model.selectedIndex,
+                        isOnActiveDisplay: isOnActiveDisplay(window),
+                        inactiveBackgroundOpacity: inactiveBackground,
+                        width: layout.cellWidth,
+                        height: layout.cellHeight,
+                        scale: layout.scale,
+                        onSelect: { onSelect(window) },
+                        onClose: { onClose(window) }
+                    )
+                }
             }
         }
         .padding(spacing)
@@ -84,6 +91,20 @@ struct SwitcherView: View {
             RoundedRectangle(cornerRadius: SwitcherLayout.panelCornerRadius, style: .continuous)
                 .fill(.ultraThinMaterial)
         )
+    }
+
+    /// 検索クエリを表示するバー（クエリが空でないときのみ表示）。
+    private var searchBar: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+            Text(model.searchQuery)
+            if model.windows.isEmpty {
+                Text("一致なし").foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .font(.system(size: SwitcherLayout.appNameFontSize(layout.scale)))
+        .frame(height: SwitcherLayout.searchBarHeight(layout.scale))
     }
 
     /// このウィンドウがアクティブ（マウスカーソルのある）ディスプレイにあるか。

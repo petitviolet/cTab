@@ -89,7 +89,14 @@ final class SwitcherPanel {
             columns: layout.columns, rows: layout.rows,
             cellWidth: layout.cellWidth, cellHeight: layout.cellHeight
         )
-        return GridLayout.contentSize(result, spacing: SwitcherLayout.gridSpacing(layout.scale))
+        var size = GridLayout.contentSize(result, spacing: SwitcherLayout.gridSpacing(layout.scale))
+        // 検索バー表示中はその高さ＋間隔ぶんパネルを高くする。
+        if !model.searchQuery.isEmpty {
+            let spacing = SwitcherLayout.gridSpacing(layout.scale)
+            size.height += SwitcherLayout.searchBarHeight(layout.scale) + spacing
+            size.width = max(size.width, 260 * layout.scale)
+        }
+        return size
     }
 
     private func makePanel() -> NSPanel {

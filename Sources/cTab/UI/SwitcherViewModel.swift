@@ -9,6 +9,8 @@ final class SwitcherViewModel {
     var selectedIndex: Int = 0
     /// 現在アクティブ（マウスカーソルのある）ディスプレイの frame。これ以外の画面のパネルは減光する。
     var activeScreenFrame: CGRect = .zero
+    /// インクリメンタル検索のクエリ。空なら検索バー非表示。
+    var searchQuery: String = ""
 
     func update(windows: [WindowInfo], selectedIndex: Int) {
         self.windows = windows
