@@ -112,6 +112,8 @@ struct SwitcherView: View {
     let onSelect: (WindowInfo) -> Void
     /// セルの閉じるボタンを押したとき（そのウィンドウを閉じる）。
     let onClose: (WindowInfo) -> Void
+    /// セルにマウスホバーし始めたとき（そのウィンドウを選択状態にする）。
+    let onHover: (WindowInfo) -> Void
 
     var body: some View {
         let spacing = SwitcherLayout.gridSpacing(layout.scale)
@@ -138,7 +140,8 @@ struct SwitcherView: View {
                         height: layout.cellHeight,
                         scale: layout.scale,
                         onSelect: { onSelect(window) },
-                        onClose: { onClose(window) }
+                        onClose: { onClose(window) },
+                        onHoverBegan: { onHover(window) }
                     )
                 }
             }
@@ -192,6 +195,7 @@ struct WindowCell: View {
     let scale: CGFloat
     let onSelect: () -> Void
     let onClose: () -> Void
+    let onHoverBegan: () -> Void
 
     @State private var isHovering = false
     @Environment(\.colorScheme) private var colorScheme
@@ -272,7 +276,11 @@ struct WindowCell: View {
         .environment(\.colorScheme, backgroundOpacity > 0 ? .dark : colorScheme)
         .contentShape(Rectangle())
         .onTapGesture { onSelect() }
-        .onHover { hovering in isHovering = hovering }
+        .onHover { hovering in
+            isHovering = hovering
+            // ホバーし始めたらそのウィンドウを選択状態にする（枠線が付く）。
+            if hovering { onHoverBegan() }
+        }
     }
 
     /// ホバー時にサムネイル右上へ出す閉じるボタン。

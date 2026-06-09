@@ -9,6 +9,7 @@ final class SwitcherPanel {
     private let model: SwitcherViewModel
     private let onSelect: (WindowInfo) -> Void
     private let onClose: (WindowInfo) -> Void
+    private let onHover: (WindowInfo) -> Void
     private var panels: [NSPanel] = []
     /// panels と並行する各パネルの配置先ディスプレイ frame（active 切替の検索用）。
     private var panelScreenFrames: [CGRect] = []
@@ -16,11 +17,13 @@ final class SwitcherPanel {
     init(
         model: SwitcherViewModel,
         onSelect: @escaping (WindowInfo) -> Void,
-        onClose: @escaping (WindowInfo) -> Void
+        onClose: @escaping (WindowInfo) -> Void,
+        onHover: @escaping (WindowInfo) -> Void
     ) {
         self.model = model
         self.onSelect = onSelect
         self.onClose = onClose
+        self.onHover = onHover
     }
 
     /// 各ディスプレイのレイアウトに合わせてパネルを表示する（要素数だけパネルを用意）。
@@ -76,7 +79,7 @@ final class SwitcherPanel {
 
     /// パネルの SwiftUI 中身を設定する。既存の NSHostingView があれば rootView 差し替えで再利用する。
     private func setRootView(of panel: NSPanel, layout: ScreenLayout) {
-        let root = SwitcherView(model: model, layout: layout, onSelect: onSelect, onClose: onClose)
+        let root = SwitcherView(model: model, layout: layout, onSelect: onSelect, onClose: onClose, onHover: onHover)
         if let hosting = panel.contentView as? NSHostingView<SwitcherView> {
             hosting.rootView = root
         } else {

@@ -8,7 +8,8 @@ final class SwitcherController: EventTapControllerDelegate {
     private lazy var panel = SwitcherPanel(
         model: model,
         onSelect: { [weak self] window in self?.selectWithMouse(window) },
-        onClose: { [weak self] window in self?.closeWithMouse(window) }
+        onClose: { [weak self] window in self?.closeWithMouse(window) },
+        onHover: { [weak self] window in self?.hoverSelect(window) }
     )
     private let eventTap = EventTapController()
     private let thumbnailCache = ThumbnailCache()
@@ -126,6 +127,14 @@ final class SwitcherController: EventTapControllerDelegate {
         guard isSwitcherActive else { return }
         WindowActivator.activate(window)
         close()
+    }
+
+    /// セルにマウスホバーし始めたとき：そのウィンドウを選択状態にする（枠線が付く）。
+    private func hoverSelect(_ window: WindowInfo) {
+        guard isSwitcherActive else { return }
+        if let index = model.windows.firstIndex(where: { $0.id == window.id }) {
+            model.selectedIndex = index
+        }
     }
 
     /// セルの閉じるボタンを押したとき：そのウィンドウを閉じ、一覧を更新する（切り替えはしない）。
