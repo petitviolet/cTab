@@ -22,6 +22,9 @@ final class SwitcherController: EventTapControllerDelegate {
     private var allWindows: [WindowInfo] = []
     /// 現在の検索クエリ。
     private var searchQuery = ""
+    /// ホバー選択を有効にするか。開いた直後はカーソル下のセルに onHover が発火するため、
+    /// 実際にマウスが動くまで false にして初期選択の上書きを防ぐ。
+    private var hoverEnabled = false
 
     private(set) var isSwitcherActive = false
 
@@ -130,8 +133,9 @@ final class SwitcherController: EventTapControllerDelegate {
     }
 
     /// セルにマウスホバーし始めたとき：そのウィンドウを選択状態にする（枠線が付く）。
+    /// 開いた直後（マウス未移動）はカーソル下のセルへの誤発火を無視する。
     private func hoverSelect(_ window: WindowInfo) {
-        guard isSwitcherActive else { return }
+        guard isSwitcherActive, hoverEnabled else { return }
         if let index = model.windows.firstIndex(where: { $0.id == window.id }) {
             model.selectedIndex = index
         }
@@ -214,6 +218,8 @@ final class SwitcherController: EventTapControllerDelegate {
         allWindows = windows
         searchQuery = ""
         model.searchQuery = ""
+        // 開いた直後はマウスが動くまでホバー選択を無効にする（初期選択の上書き防止）。
+        hoverEnabled = false
 
         let initialIndex = reverse
             ? Navigation.previousIndex(current: 0, count: windows.count)
@@ -250,12 +256,12 @@ final class SwitcherController: EventTapControllerDelegate {
         return NSScreen.screens.first { NSMouseInRect(location, $0.frame, false) }
     }
 
-    /// 表示中のマウス移動を監視し、別ディスプレイへ移ったらアクティブ画面を切り替える。
-    /// ディスプレイが複数あるときのみ監視する（1枚なら全ウィンドウが同一画面で区別不要）。
+    /// 表示中のマウス移動を監視する。実際に動いたらホバー選択を有効化し、
+    /// 複数ディスプレイなら別画面へ移ったときにアクティブ画面を切り替える。
     /// cTab はアクティブ化しない（`.nonactivatingPanel`）ためマウスイベントは他アプリへ流れる。
     /// よって global monitor だけで全位置を捕捉でき、local monitor は不要。
     private func startMouseTracking() {
-        guard mouseMonitors.isEmpty, NSScreen.screens.count > 1 else { return }
+        guard mouseMonitors.isEmpty else { return }
         if let global = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved], handler: { [weak self] _ in
             self?.handleMouseMoved()
         }) {
@@ -269,9 +275,11 @@ final class SwitcherController: EventTapControllerDelegate {
     }
 
     private func handleMouseMoved() {
-        guard isSwitcherActive,
-              let frame = mouseScreen()?.frame,
-              frame != model.activeScreenFrame else { return }
+        guard isSwitcherActive else { return }
+        // 実際にマウスが動いたのでホバー選択を有効化する。
+        hoverEnabled = true
+        // 別ディスプレイへ移ったらアクティブ画面を切り替える。
+        guard let frame = mouseScreen()?.frame, frame != model.activeScreenFrame else { return }
         model.activeScreenFrame = frame
         // パネルがある画面なら key を移す（無ければ no-op）。
         panel.makeActive(screenFrame: frame)
