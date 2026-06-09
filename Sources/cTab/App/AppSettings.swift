@@ -39,9 +39,9 @@ enum AppSettings {
     static let minSizeScale: CGFloat = 0.5
     static let maxSizeScale: CGFloat = 1.5
 
-    /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（1.0 = 設定上の最大）。
+    /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度（1.0 = 設定上の最大、0 = 黒背景なし）。
     static let defaultInactiveBackgroundOpacity: CGFloat = 1.0
-    static let minInactiveBackgroundOpacity: CGFloat = 0.3
+    static let minInactiveBackgroundOpacity: CGFloat = 0.0
     static let maxInactiveBackgroundOpacity: CGFloat = 1.0
     /// 黒さの基準係数。以前の 100% が濃すぎたため 0.5 に調整（以前の 50% を新しい 100% に）。
     /// 設定値（inactiveBackgroundOpacity）にこれを掛けた値を実際の黒背景の不透明度として使う。
