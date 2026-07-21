@@ -1,0 +1,44 @@
+name: Release
+
+# バージョンタグ（例: v1.0.0）を push すると .app をビルドして
+# GitHub Release にアーティファクトとして公開する。
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Run tests
+        run: swift test
+
+      - name: Build .app bundle
+        # 署名証明書は CI に無いため ad-hoc 署名にフォールバックする（配布用途では
+        # 受け取り側で quarantine 解除が必要）。
+        run: scripts/build_app.sh bundle
+
+      - name: Package .app as zip
+        run: |
+          cd build
+          # ditto は .app の拡張属性・シンボリックリンクを保ったまま zip 化する。
+          ditto -c -k --keepParent --sequesterRsrc cTab.app "cTab-${GITHUB_REF_NAME}.zip"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "build/cTab-${GITHUB_REF_NAME}.zip" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes
