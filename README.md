@@ -4,6 +4,10 @@ Command+Tab で、開いている全アプリケーションの**ウィンドウ
 
 詳細な仕様は [docs/specification_ja.md](docs/specification_ja.md)（English: [docs/specification_en.md](docs/specification_en.md)）を参照してください。
 
+![cTab スイッチャーの表示例](docs/screenshot.png)
+
+> スクリーンショットのウィンドウ内容は、実際の画面を写さないよう AI で生成した架空のアプリ画面です。UI レイアウトは実際の `SwitcherView` をそのまま描画しています。
+
 ## 特徴
 
 - **ウィンドウ単位の切り替え** — アプリ単位ではなく、個々のウィンドウを一覧表示
@@ -33,7 +37,25 @@ Command+Tab で、開いている全アプリケーションの**ウィンドウ
 - macOS 14 以降（開発・検証は macOS 26）
 - Swift 6 ツールチェーン（Xcode 26 同梱）
 
-## ビルドとインストール
+## インストール
+
+### GitHub Releases から（推奨）
+
+ビルド済みの `.app` を [Releases](https://github.com/petitviolet/cTab/releases) からダウンロードできます（`v*` タグの push ごとに自動ビルド・公開されます）。
+
+1. 最新リリースの `cTab-vX.Y.Z.zip` をダウンロードして展開
+2. `cTab.app` を `~/Applications`（または `/Applications`）へ移動
+3. 配布ビルドは Apple の公証（notarization）を受けていないため、初回は Gatekeeper に隔離されます。次のいずれかで解除してから起動してください。
+   - Finder で `cTab.app` を右クリック →「開く」→ ダイアログで「開く」
+   - もしくはターミナルで隔離属性を除去：
+     ```bash
+     xattr -dr com.apple.quarantine ~/Applications/cTab.app
+     ```
+4. 起動後、[権限の付与](#権限の付与) に従ってアクセシビリティ（必須）と画面収録（任意）を許可
+
+> 配布ビルドは ad-hoc 署名のため、[再ビルド後も権限を維持する](#再ビルド後も権限を維持する推奨) 仕組みは効きません（macOS の更新やアプリ差し替えで権限の再付与が必要になることがあります）。権限を永続化したい場合はソースからビルドし、自己署名証明書を使う方法を推奨します。
+
+### ソースからビルド
 
 ```bash
 # ユニットテスト
