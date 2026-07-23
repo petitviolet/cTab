@@ -24,11 +24,20 @@ final class SettingsWindowController {
 
     private func makeWindow() -> NSWindow {
         let hosting = NSHostingController(rootView: SettingsView(model: model))
-        let window = NSWindow(contentViewController: hosting)
+        let window = EscClosableWindow(contentViewController: hosting)
         window.title = "cTab 設定"
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.isReleasedWhenClosed = false
         window.center()
         return window
+    }
+}
+
+/// Esc キーで閉じられるウィンドウ。
+/// Esc はどのビューにも処理されなければレスポンダチェーン経由で
+/// `cancelOperation` としてウィンドウに届くため、ここで閉じる。
+private final class EscClosableWindow: NSWindow {
+    override func cancelOperation(_ sender: Any?) {
+        close()
     }
 }
