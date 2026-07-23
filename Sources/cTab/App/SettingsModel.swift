@@ -9,6 +9,8 @@ final class SettingsModel {
     var screenRecordingGranted = false
     var launchAtLogin = false
     var version = "-"
+    /// セキュア入力を保持しているプロセス名。nil なら正常（キー傍受が可能）。
+    var secureInputHolder: String?
     /// スイッチャー表示サイズの倍率（永続化された設定値の初期反映）。
     var sizeScale: CGFloat = AppSettings.sizeScale
     /// 全ディスプレイ同時表示の ON/OFF。
@@ -36,6 +38,7 @@ final class SettingsModel {
         accessibilityGranted = Permissions.hasAccessibility()
         screenRecordingGranted = Permissions.hasScreenRecording()
         launchAtLogin = LoginItem.isEnabled
+        secureInputHolder = Permissions.secureInputHolder()
 
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"

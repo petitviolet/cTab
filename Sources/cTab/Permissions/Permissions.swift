@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import CoreGraphics
+import IOKit
 
 /// TCC 権限の確認・要求・設定画面誘導。
 ///
@@ -40,6 +41,38 @@ enum Permissions {
 
     static func openScreenRecordingSettings() {
         open(settings: "Privacy_ScreenCapture")
+    }
+
+    // MARK: - Secure Keyboard Entry（セキュア入力）
+
+    /// セキュア入力を保持しているプロセスの表示名。保持者がいなければ nil（正常）。
+    ///
+    /// セキュア入力が有効な間はセッション内の CGEventTap にキーイベントが配送されず、
+    /// cTab のトリガが一切反応しなくなる。パスワード入力欄を持つアプリ（Terminal、
+    /// ブラウザ等）が保持し、異常終了すると死んだ PID を指したまま残る（stuck）ことがある。
+    static func secureInputHolder() -> String? {
+        guard let pid = secureInputHolderPID() else { return nil }
+        if let app = NSRunningApplication(processIdentifier: pid) {
+            return app.localizedName ?? "PID \(pid)"
+        }
+        // NSRunningApplication で引けない = GUI 外プロセスか、既に終了した PID（stuck 状態）。
+        return kill(pid, 0) == 0 ? "PID \(pid) のプロセス" : "終了済みプロセス（PID \(pid)）"
+    }
+
+    /// IORegistry の IOConsoleUsers から kCGSSessionSecureInputPID を読む。無ければ nil。
+    private static func secureInputHolderPID() -> pid_t? {
+        let root = IORegistryGetRootEntry(kIOMainPortDefault)
+        guard root != 0 else { return nil }
+        defer { IOObjectRelease(root) }
+        guard let users = IORegistryEntryCreateCFProperty(
+            root, "IOConsoleUsers" as CFString, kCFAllocatorDefault, 0
+        )?.takeRetainedValue() as? [[String: Any]] else { return nil }
+        for user in users {
+            if let pid = user["kCGSSessionSecureInputPID"] as? Int, pid > 0 {
+                return pid_t(pid)
+            }
+        }
+        return nil
     }
 
     // MARK: - Helpers

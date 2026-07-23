@@ -237,6 +237,10 @@ struct SettingsView: View {
 
             Divider()
 
+            secureInputStatus
+                .padding(.horizontal, 22)
+                .padding(.top, 10)
+
             HStack(spacing: 10) {
                 Text("権限を変更したら「再起動」してください")
                     .font(.system(size: 11))
@@ -248,9 +252,28 @@ struct SettingsView: View {
             .padding(.horizontal, 22)
             .padding(.vertical, 12)
         }
-        .frame(width: 470, height: 640)
+        .frame(width: 470, height: 660)
         .onAppear { model.refresh() }
         .onReceive(refreshTimer) { _ in model.refresh() }
+    }
+
+    /// セキュア入力（Secure Keyboard Entry）の状態表示。
+    /// 他プロセスが保持している間は CGEventTap にキーが配送されず、トリガが反応しない。
+    private var secureInputStatus: some View {
+        HStack(spacing: 6) {
+            if let holder = model.secureInputHolder {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Color.orange)
+                Text("セキュア入力を「\(holder)」が保持中のため、ショートカットが反応しません。該当アプリの再起動（それでも直らなければ Mac の再起動）で解除されます")
+            } else {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(Color.green)
+                Text("セキュア入力: なし（キー傍受は正常に動作できます）")
+            }
+            Spacer(minLength: 0)
+        }
+        .font(.system(size: 11))
+        .foregroundStyle(.secondary)
     }
 
     private var header: some View {
