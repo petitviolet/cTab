@@ -39,7 +39,15 @@ Command+Tab で、開いている全アプリケーションの**ウィンドウ
 
 ## インストール
 
-### GitHub Releases から（推奨）
+### Homebrew から（推奨）
+
+```bash
+brew install --cask --no-quarantine petitviolet/tap/ctab
+```
+
+`--no-quarantine` は Gatekeeper の隔離を付けないためのオプションです（cTab は ad-hoc 署名・未公証のため、これを付けないと初回起動時に隔離解除の操作が必要になります）。更新は `brew upgrade --cask ctab`。インストール後は [権限の付与](#権限の付与) に従ってください。
+
+### GitHub Releases から
 
 ビルド済みの `.app` を [Releases](https://github.com/petitviolet/cTab/releases) からダウンロードできます（`v*` タグの push ごとに自動ビルド・公開されます）。
 

@@ -42,3 +42,24 @@ jobs:
             "build/cTab-${GITHUB_REF_NAME}.zip" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes
+
+      - name: Update Homebrew cask
+        # petitviolet/homebrew-tap の Casks/ctab.rb を新バージョン・新 sha256 で書き換える。
+        # TAP_GITHUB_TOKEN: homebrew-tap への書き込み権限を持つ PAT（未設定ならスキップ）。
+        env:
+          GH_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "TAP_GITHUB_TOKEN が未設定のため cask 更新をスキップします"
+            exit 0
+          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA256=$(shasum -a 256 "build/cTab-${GITHUB_REF_NAME}.zip" | awk '{print $1}')
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/petitviolet/homebrew-tap.git" /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+          sed -i '' -e "s/^  version \".*\"/  version \"${VERSION}\"/" \
+                    -e "s/^  sha256 \".*\"/  sha256 \"${SHA256}\"/" Casks/ctab.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "ctab ${VERSION}"
+          git push
