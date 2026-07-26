@@ -8,6 +8,7 @@ enum WindowInfoFixture {
     static func make(
         id: CGWindowID = 1,
         appName: String = "TestApp",
+        bundleID: String? = nil,
         title: String = "",
         screenFrame: CGRect = .zero,
         isOnOtherSpace: Bool = false,
@@ -18,6 +19,7 @@ enum WindowInfoFixture {
             id: id,
             pid: getpid(),
             appName: appName,
+            bundleID: bundleID,
             title: title,
             appIcon: nil,
             axElement: AXUIElementCreateApplication(getpid()),

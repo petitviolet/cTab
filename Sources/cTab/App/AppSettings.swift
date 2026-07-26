@@ -152,4 +152,43 @@ enum AppSettings {
     static func clampSizeScale(_ value: CGFloat) -> CGFloat {
         min(max(value, minSizeScale), maxSizeScale)
     }
+
+    // MARK: - アプリショートカット（キー⇔アプリ紐づけ）
+
+    private static let appHotKeysKey = "appHotKeys"
+
+    /// スイッチャー表示中のアプリ切替ショートカット（keyCode → bundle id）。既定は空（機能無効）。
+    /// EventTap のホットパスから参照されるため、UserDefaults を毎回読まずメモリキャッシュを介す。
+    static var appHotKeys: [Int: String] {
+        get { appHotKeysCache }
+        set {
+            appHotKeysCache = newValue
+            let raw = Dictionary(uniqueKeysWithValues: newValue.map { (String($0.key), $0.value) })
+            UserDefaults.standard.set(raw, forKey: appHotKeysKey)
+        }
+    }
+
+    private static var appHotKeysCache: [Int: String] = loadAppHotKeys()
+
+    /// UserDefaults から読み込む。外部で書き換えられた不正値は捨てる。
+    /// キャッシュ初期化専用（このメソッド単体を呼んでもキャッシュは更新されない）。
+    private static func loadAppHotKeys() -> [Int: String] {
+        guard let raw = UserDefaults.standard.dictionary(forKey: appHotKeysKey) else { return [:] }
+        return parseAppHotKeys(raw)
+    }
+
+    /// 生の辞書を検証付きで [keyCode: bundleID] へ変換する（純ロジック・テスト対象）。
+    /// 数値でないキー・負のキーコード・空の bundle id に加え、スイッチャー操作の予約キーも除去する
+    /// （設定 UI は登録前に拒否するが、外部書き換えやトリガキー変更後の残骸に備える）。
+    static func parseAppHotKeys(_ raw: [String: Any]) -> [Int: String] {
+        // トリガキー候補（Tab / `）は予約セットに常に含まれるため、現在のトリガ設定に依らない。
+        let reserved = AppHotKeyResolver.reservedKeyCodes(triggerKeyCode: HotKeyMatcher.tabKeyCode)
+        var result: [Int: String] = [:]
+        for (key, value) in raw {
+            guard let keyCode = Int(key), keyCode >= 0, !reserved.contains(Int64(keyCode)),
+                  let bundleID = value as? String, !bundleID.isEmpty else { continue }
+            result[keyCode] = bundleID
+        }
+        return result
+    }
 }

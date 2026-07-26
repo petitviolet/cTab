@@ -43,11 +43,12 @@ enum WindowEnumerator {
             guard err == .success, let axWindows = windowsValue as? [AXUIElement] else { continue }
 
             let appName = app.localizedName ?? "Unknown"
+            let bundleID = app.bundleIdentifier
             let icon = app.icon
 
             for axWindow in axWindows {
                 AXUIElementSetMessagingTimeout(axWindow, messagingTimeout)
-                guard let info = makeWindowInfo(axWindow, pid: pid, appName: appName, icon: icon, onScreen: onScreen) else { continue }
+                guard let info = makeWindowInfo(axWindow, pid: pid, appName: appName, bundleID: bundleID, icon: icon, onScreen: onScreen) else { continue }
                 result.append(info)
             }
         }
@@ -65,7 +66,7 @@ enum WindowEnumerator {
     }
 
     /// 1 ウィンドウ分の属性を読み、標準ウィンドウなら WindowInfo を作る。対象外なら nil。
-    private static func makeWindowInfo(_ window: AXUIElement, pid: pid_t, appName: String, icon: NSImage?, onScreen: (order: [CGWindowID: Int], bounds: [CGWindowID: CGRect])) -> WindowInfo? {
+    private static func makeWindowInfo(_ window: AXUIElement, pid: pid_t, appName: String, bundleID: String?, icon: NSImage?, onScreen: (order: [CGWindowID: Int], bounds: [CGWindowID: CGRect])) -> WindowInfo? {
         let role: String?
         let subrole: String?
         let title: String
@@ -101,6 +102,7 @@ enum WindowEnumerator {
             id: windowID,
             pid: pid,
             appName: appName,
+            bundleID: bundleID,
             title: title,
             appIcon: icon,
             axElement: window,

@@ -121,6 +121,7 @@ enum ScreenshotRenderer {
             id: id,
             pid: 0,
             appName: fake.appName,
+            bundleID: fake.bundleIDs.first,
             title: fake.title,
             appIcon: appIcon(for: fake.bundleIDs),
             // 描画専用でクリック操作はしないため、自プロセスの AX 参照をダミーとして持たせる。

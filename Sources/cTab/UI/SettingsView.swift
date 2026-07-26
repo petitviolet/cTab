@@ -72,6 +72,12 @@ struct SettingsView: View {
                 .padding(6)
             }
 
+            GroupBox("アプリショートカット") {
+                AppHotKeySettingsView(model: model)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(6)
+            }
+
             GroupBox("起動") {
                 Toggle("ログイン時に起動", isOn: Binding(
                     get: { model.launchAtLogin },

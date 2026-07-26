@@ -9,6 +9,8 @@ struct WindowInfo: Identifiable {
     let id: CGWindowID
     let pid: pid_t
     let appName: String
+    /// アプリの bundle identifier。取得できないアプリは nil（アプリショートカットの対象外になる）。
+    let bundleID: String?
     let title: String
     let appIcon: NSImage?
     let axElement: AXUIElement

@@ -33,12 +33,34 @@ final class SettingsModel {
     var highlightActiveDisplay: Bool = AppSettings.highlightActiveDisplay
     /// アクティブ画面にないウィンドウへ敷く黒背景の不透明度。
     var inactiveBackgroundOpacity: CGFloat = AppSettings.inactiveBackgroundOpacity
+    /// アプリショートカット（keyCode → bundle id）。
+    var appHotKeys: [Int: String] = AppSettings.appHotKeys
+
+    /// アプリショートカットを追加する（同じキーは上書き）。
+    func addAppHotKey(keyCode: Int, bundleID: String) {
+        updateAppHotKeys { $0[keyCode] = bundleID }
+    }
+
+    /// アプリショートカットを削除する。
+    func removeAppHotKey(keyCode: Int) {
+        updateAppHotKeys { $0.removeValue(forKey: keyCode) }
+    }
+
+    /// 紐づけ辞書を変更して AppSettings と画面状態の双方へ反映する。
+    /// 辞書の部分更新のため、他項目の Binding 直接書き戻しパターンではなくメソッド経由にしている。
+    private func updateAppHotKeys(_ mutate: (inout [Int: String]) -> Void) {
+        var bindings = AppSettings.appHotKeys
+        mutate(&bindings)
+        AppSettings.appHotKeys = bindings
+        appHotKeys = bindings
+    }
 
     func refresh() {
         accessibilityGranted = Permissions.hasAccessibility()
         screenRecordingGranted = Permissions.hasScreenRecording()
         launchAtLogin = LoginItem.isEnabled
         secureInputHolder = Permissions.secureInputHolder()
+        appHotKeys = AppSettings.appHotKeys
 
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "-"

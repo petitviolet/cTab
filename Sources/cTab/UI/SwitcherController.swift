@@ -113,6 +113,24 @@ final class SwitcherController: EventTapControllerDelegate {
         return true
     }
 
+    func handleAppHotKey(keyCode: Int64, flags: CGEventFlags, modifier: CGEventFlags) -> Bool {
+        guard isSwitcherActive else { return false }
+        guard let bundleID = AppHotKeyResolver.bundleID(
+            keyCode: keyCode,
+            flags: flags,
+            modifier: modifier,
+            bindings: AppSettings.appHotKeys
+        ) else { return false }
+        // 紐づけ済みキー: 該当アプリの最前面ウィンドウへ即切り替え。
+        // 検索で絞り込み中でも切り替えられるよう、フィルタ済みの model.windows ではなく母集合から探す。
+        // 対象ウィンドウが無い場合も消費する（検索入力へ流すと意図しない絞り込みになるため）。
+        if let index = AppHotKeyResolver.firstIndex(of: bundleID, in: allWindows.map(\.bundleID)) {
+            WindowActivator.activate(allWindows[index])
+            close()
+        }
+        return true
+    }
+
     func handleToggleFullScreen() -> Bool {
         guard isSwitcherActive, let target = selectedWindow() else { return true }
         // フルスクリーン切替後はそのウィンドウへ移動して確定する（アニメーションを見せる）。

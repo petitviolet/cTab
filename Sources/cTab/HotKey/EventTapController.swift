@@ -26,6 +26,9 @@ protocol EventTapControllerDelegate: AnyObject {
     func handleMinimizeSelectedWindow() -> Bool
     /// 選択中ウィンドウのフルスクリーンを切り替える（Command+F）。戻り値 true で消費。
     func handleToggleFullScreen() -> Bool
+    /// アプリショートカット（キー⇔アプリ紐づけ）の候補キーが押された。
+    /// 紐づけ済みなら該当アプリへ切り替えて true（消費）、未登録なら false（検索入力へ流す）。
+    func handleAppHotKey(keyCode: Int64, flags: CGEventFlags, modifier: CGEventFlags) -> Bool
     /// スイッチャーが表示中か。イベント消費要否の判断に使う。
     var isSwitcherActive: Bool { get }
 }
@@ -167,6 +170,10 @@ final class EventTapController {
                 // Backspace は検索クエリを 1 文字削除する。
                 if keyCode == HotKeyMatcher.deleteKeyCode {
                     return passthrough(event, consumed: delegate?.handleSearchBackspace() ?? false)
+                }
+                // アプリショートカット。紐づけ済みキーのみ消費し、未登録キーは検索へ流す。
+                if delegate?.handleAppHotKey(keyCode: keyCode, flags: flags, modifier: modifier) == true {
+                    return passthrough(event, consumed: true)
                 }
                 // 表示可能な文字はインクリメンタル検索へ送る（スイッチャー表示中のみ・ローカル処理のみ）。
                 if let text = printableString(from: event) {
